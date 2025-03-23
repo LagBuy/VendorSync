@@ -1,0 +1,9 @@
+.cash-flow .round-btns {
+  gap: 8px;
+  justify-content: flex-end;
+}
+.cash-flow .trend-report {
+  margin-top: 30px;
+  justify-content: flex-start;
+  gap: 10px;
+}
