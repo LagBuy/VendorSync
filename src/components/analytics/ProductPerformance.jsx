@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -10,15 +11,23 @@ import {
 } from "recharts";
 import { motion } from "framer-motion";
 
-const productPerformanceData = [
-  { name: "Product A", sales: 4000, revenue: 2400, profit: 2400 },
-  { name: "Product B", sales: 3000, revenue: 1398, profit: 2210 },
-  { name: "Product C", sales: 2000, revenue: 9800, profit: 2290 },
-  { name: "Product D", sales: 2780, revenue: 3908, profit: 2000 },
-  { name: "Product E", sales: 1890, revenue: 4800, profit: 2181 },
-];
-
 const ProductPerformance = () => {
+  const [productData, setProductData] = useState([]);
+
+  useEffect(() => {
+    const fetchProductPerformance = async () => {
+      try {
+        const response = await fetch("/api/product-performance"); // Replace with your actual API endpoint
+        const data = await response.json();
+        setProductData(data);
+      } catch (error) {
+        console.error("Failed to fetch product performance data:", error);
+      }
+    };
+
+    fetchProductPerformance();
+  }, []);
+
   return (
     <motion.div
       className="bg-gray-800 bg-opacity-50 backdrop-filter backdrop-blur-lg shadow-lg rounded-xl p-6 border border-gray-700"
@@ -29,10 +38,10 @@ const ProductPerformance = () => {
       <h2 className="text-xl font-semibold text-gray-100 mb-4">
         Product Performance
       </h2>
-      <p> This shows how good or bad your product is doing in the market.</p>
+      <p>This shows how good or bad your product is doing in the market.</p>
       <div style={{ width: "100%", height: 300 }}>
         <ResponsiveContainer>
-          <BarChart data={productPerformanceData}>
+          <BarChart data={productData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis dataKey="name" stroke="#9CA3AF" />
             <YAxis stroke="#9CA3AF" />
@@ -53,4 +62,5 @@ const ProductPerformance = () => {
     </motion.div>
   );
 };
+
 export default ProductPerformance;

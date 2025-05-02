@@ -1,6 +1,6 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  DollarSign,
   Users,
   ShoppingBag,
   Eye,
@@ -8,14 +8,80 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
-const overviewData = [
-  { name: "Revenue", value: " ₦1,234,567.15", change: 12.5, icon: DollarSign },
-  { name: "Customers", value: "978", change: 8.3, icon: Users },
-  { name: "Orders", value: "9,876", change: -3.2, icon: ShoppingBag },
-  { name: "Page Views", value: "1,874,507", change: 15.7, icon: Eye },
-];
+// Custom Naira SVG icon
+const NairaIcon = ({ className = "size-6" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M6 18V6m0 6h12M18 6v12M6 6l12 12M6 18l12-12"
+    />
+  </svg>
+);
 
 const OverviewCards = () => {
+  const [data, setData] = useState({
+    revenue: 0,
+    revenueChange: 0,
+    customers: 0,
+    customerChange: 0,
+    orders: 0,
+    orderChange: 0,
+    views: 0,
+    viewChange: 0,
+  });
+
+  useEffect(() => {
+    const fetchOverviewData = async () => {
+      try {
+        const response = await fetch("https://your-backend.com/api/overview");
+        const result = await response.json();
+        setData(result);
+      } catch (error) {
+        console.error("Failed to fetch overview data:", error);
+      }
+    };
+
+    fetchOverviewData();
+  }, []);
+
+  const overviewData = [
+    {
+      name: "Revenue",
+      value: `₦${data.revenue.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`,
+      change: data.revenueChange,
+      icon: NairaIcon,
+    },
+    {
+      name: "Customers",
+      value: data.customers.toLocaleString(),
+      change: data.customerChange,
+      icon: Users,
+    },
+    {
+      name: "Orders",
+      value: data.orders.toLocaleString(),
+      change: data.orderChange,
+      icon: ShoppingBag,
+    },
+    {
+      name: "Page Views",
+      value: data.views.toLocaleString(),
+      change: data.viewChange,
+      icon: Eye,
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
       {overviewData.map((item, index) => (
@@ -37,25 +103,22 @@ const OverviewCards = () => {
             </div>
 
             <div
-              className={`
-              p-3 rounded-full bg-opacity-20 ${
+              className={`p-3 rounded-full bg-opacity-20 ${
                 item.change >= 0 ? "bg-green-500" : "bg-red-500"
-              }
-              `}
+              }`}
             >
               <item.icon
-                className={`size-6  ${
+                className={`size-6 ${
                   item.change >= 0 ? "text-green-500" : "text-red-500"
                 }`}
               />
             </div>
           </div>
+
           <div
-            className={`
-              mt-4 flex items-center ${
-                item.change >= 0 ? "text-green-500" : "text-red-500"
-              }
-            `}
+            className={`mt-4 flex items-center ${
+              item.change >= 0 ? "text-green-500" : "text-red-500"
+            }`}
           >
             {item.change >= 0 ? (
               <ArrowUpRight size="20" />
@@ -72,4 +135,5 @@ const OverviewCards = () => {
     </div>
   );
 };
+
 export default OverviewCards;

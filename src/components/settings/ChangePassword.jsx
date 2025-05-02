@@ -1,129 +1,92 @@
 import { useState } from "react";
-import { Button, Modal } from "antd";
-import { Checkbox, Label, TextInput, Popover } from "flowbite-react";
+import { toast } from "react-toastify";
+
+const getPasswordStrength = (password) => {
+  if (
+    password.length >= 12 &&
+    /[A-Z]/.test(password) &&
+    /\d/.test(password) &&
+    /[^A-Za-z0-9]/.test(password)
+  ) {
+    return "Strong";
+  } else if (password.length >= 8) {
+    return "Medium";
+  }
+  return "Weak";
+};
 
 const ChangePassword = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const showModal = () => {
-    setIsModalOpen(true);
+  const [current, setCurrent] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [confirm, setConfirm] = useState("");
+
+  const strength = getPasswordStrength(newPass);
+  const strengthColor = {
+    Weak: "text-red-500",
+    Medium: "text-yellow-500",
+    Strong: "text-green-500",
   };
-  const handleOk = () => {
-    setIsModalOpen(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    // Check if fields are empty
+    if (!current || !newPass || !confirm) {
+      toast.error("Please fill all fields.");
+      return;
+    }
+
+    // Check if passwords match
+    if (newPass !== confirm) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+
+    // Check password strength
+    if (strength === "Weak") {
+      toast.error("Choose a stronger password.");
+      return;
+    }
+
+    toast.success("Password changed successfully!");
+    // Add real save logic here
   };
-  const handleCancel = () => {
-    setIsModalOpen(false);
-  };
-  //   Render to the UI:
+
   return (
-    <>
-      <Button type="primary" onClick={showModal}>
-        🔐!
-      </Button>
-      <Modal
-        title="Confirm Change Of Password"
-        open={isModalOpen}
-        onOk={handleOk}
-        onCancel={handleCancel}
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
+      <input
+        type="password"
+        placeholder="Current password"
+        value={current}
+        onChange={(e) => setCurrent(e.target.value)}
+        className="bg-gray-700 text-white px-3 py-2 rounded"
+      />
+      <input
+        type="password"
+        placeholder="New password"
+        value={newPass}
+        onChange={(e) => setNewPass(e.target.value)}
+        className="bg-gray-700 text-white px-3 py-2 rounded"
+      />
+      {newPass && (
+        <p className={`text-sm font-medium ${strengthColor[strength]}`}>
+          Strength: {strength}
+        </p>
+      )}
+      <input
+        type="password"
+        placeholder="Confirm new password"
+        value={confirm}
+        onChange={(e) => setConfirm(e.target.value)}
+        className="bg-gray-700 text-white px-3 py-2 rounded"
+      />
+      <button
+        type="submit"
+        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition duration-200"
       >
-        <form className="flex max-w-md flex-col gap-4">
-          <div>
-            <div className="mb-2 block">
-              <Label htmlFor="email1" value="Your email" />
-            </div>
-            <TextInput
-              id="email1"
-              type="email"
-              placeholder="ujoshua976@gmail.com"
-              required
-            />
-          </div>
-          <div>
-            <div className="mb-2 block">
-              <Label htmlFor="password1" value="Your password" required />
-            </div>
-            <Popover
-              trigger="hover"
-              content={
-                <div className="space-y-2 p-3">
-                  <h3 className="font-semibold text-gray-900 dark:text-white">
-                    Must have at least 6 characters
-                  </h3>
-                  <div className="grid grid-cols-4 gap-2">
-                    <div className="h-1 bg-orange-300 dark:bg-orange-400"></div>
-                    <div className="h-1 bg-orange-300 dark:bg-orange-400"></div>
-                    <div className="h-1 bg-gray-200 dark:bg-gray-600"></div>
-                    <div className="h-1 bg-gray-200 dark:bg-gray-600"></div>
-                  </div>
-                  <p>It’s better to have:</p>
-                  <ul>
-                    <li className="mb-1 flex items-center">
-                      <svg
-                        className="me-2 h-3.5 w-3.5 text-green-400 dark:text-green-500"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 16 12"
-                      >
-                        <path
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M1 5.917 5.724 10.5 15 1.5"
-                        />
-                      </svg>
-                      Upper & lower case letters
-                    </li>
-                    <li className="mb-1 flex items-center">
-                      <svg
-                        className="me-2.5 h-3 w-3 text-gray-300 dark:text-gray-400"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 14 14"
-                      >
-                        <path
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
-                        />
-                      </svg>
-                      A symbol (#$&)
-                    </li>
-                    <li className="flex items-center">
-                      <svg
-                        className="me-2.5 h-3 w-3 text-gray-300 dark:text-gray-400"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 14 14"
-                      >
-                        <path
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
-                        />
-                      </svg>
-                      A longer password (min. 12 chars.)
-                    </li>
-                  </ul>
-                </div>
-              }
-            >
-              <TextInput id="password1" type="password" required />
-            </Popover>
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox id="remember" />
-            <Label htmlFor="remember">Remember me</Label>
-          </div>
-        </form>
-      </Modal>
-    </>
+        Save Changes
+      </button>
+    </form>
   );
 };
 

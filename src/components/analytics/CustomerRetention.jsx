@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -10,18 +11,23 @@ import {
 } from "recharts";
 import { motion } from "framer-motion";
 
-const userRetentionData = [
-  { name: "Week 1", retention: 100 },
-  { name: "Week 2", retention: 75 },
-  { name: "Week 3", retention: 60 },
-  { name: "Week 4", retention: 50 },
-  { name: "Week 5", retention: 45 },
-  { name: "Week 6", retention: 40 },
-  { name: "Week 7", retention: 38 },
-  { name: "Week 8", retention: 35 },
-];
-
 const UserRetention = () => {
+  const [retentionData, setRetentionData] = useState([]);
+
+  useEffect(() => {
+    const fetchRetentionData = async () => {
+      try {
+        const response = await fetch("/api/user-retention"); // Replace with your actual API URL
+        const data = await response.json();
+        setRetentionData(data);
+      } catch (error) {
+        console.error("Failed to fetch retention data:", error);
+      }
+    };
+
+    fetchRetentionData();
+  }, []);
+
   return (
     <motion.div
       className="bg-gray-800 bg-opacity-50 backdrop-filter backdrop-blur-lg shadow-lg rounded-xl p-6 border border-gray-700"
@@ -35,7 +41,7 @@ const UserRetention = () => {
       <p>This shows how well you were able to retain customers.</p>
       <div style={{ width: "100%", height: 300 }}>
         <ResponsiveContainer>
-          <LineChart data={userRetentionData}>
+          <LineChart data={retentionData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis dataKey="name" stroke="#9CA3AF" />
             <YAxis stroke="#9CA3AF" />
@@ -59,4 +65,5 @@ const UserRetention = () => {
     </motion.div>
   );
 };
+
 export default UserRetention;

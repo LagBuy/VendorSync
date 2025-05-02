@@ -1,80 +1,58 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Eye } from "lucide-react";
-
-const orderData = [
-  {
-    id: "ORD001",
-    customer: "John Doe",
-    total: 235.4,
-    status: "Delivered",
-    date: "2024-07-01",
-  },
-  {
-    id: "ORD002",
-    customer: "Johnson Emeka",
-    total: 412.0,
-    status: "Processing",
-    date: "2024-07-02",
-  },
-  {
-    id: "ORD003",
-    customer: "Salami Keji",
-    total: 162.5,
-    status: "Shipped",
-    date: "2024-07-03",
-  },
-  {
-    id: "ORD004",
-    customer: "Timi Script",
-    total: 750.2,
-    status: "Pending",
-    date: "2024-07-04",
-  },
-  {
-    id: "ORD005",
-    customer: "Enyoisi Rachael",
-    total: 95.8,
-    status: "Delivered",
-    date: "2024-07-05",
-  },
-  {
-    id: "ORD006",
-    customer: "Adenuga Opeyemi",
-    total: 310.75,
-    status: "Processing",
-    date: "2024-07-06",
-  },
-  {
-    id: "ORD007",
-    customer: "zAHEEr",
-    total: 528.9,
-    status: "Shipped",
-    date: "2024-07-07",
-  },
-  {
-    id: "ORD008",
-    customer: "Adeleke Williams",
-    total: 189.6,
-    status: "Delivered",
-    date: "2024-07-08",
-  },
-];
+import { Search, Eye, CheckCircle } from "lucide-react";
 
 const OrdersTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredOrders, setFilteredOrders] = useState(orderData);
+  const [orders, setOrders] = useState([]);
+
+  // Fetch orders from real API
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch("https://your-backend.com/api/orders");
+        const data = await response.json();
+        setOrders(data);
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      }
+    };
+
+    fetchOrders();
+  }, []);
 
   const handleSearch = (e) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(term);
-    const filtered = orderData.filter(
-      (order) =>
-        order.id.toLowerCase().includes(term) ||
-        order.customer.toLowerCase().includes(term)
-    );
-    setFilteredOrders(filtered);
+    setSearchTerm(e.target.value.toLowerCase());
   };
+
+  const handleConfirmDelivery = async (id) => {
+    const otp = prompt("Enter OTP to confirm delivery:");
+    if (otp === "123456") {
+      const updatedOrders = orders.map((order) =>
+        order.id === id ? { ...order, status: "Delivered" } : order
+      );
+      setOrders(updatedOrders);
+
+      // Optional: Send status update to backend
+      try {
+        await fetch(`https://your-backend.com/api/orders/${id}/confirm`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "Delivered", otp }),
+        });
+      } catch (error) {
+        console.error("Error confirming delivery:", error);
+      }
+    } else {
+      alert("Invalid OTP");
+    }
+  };
+
+  const filteredOrders = orders.filter(
+    (order) =>
+      order.id.toLowerCase().includes(searchTerm) ||
+      order.customer.toLowerCase().includes(searchTerm)
+  );
 
   return (
     <motion.div
@@ -102,10 +80,13 @@ const OrdersTable = () => {
           <thead>
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Order ID
+                ID
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Customer
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                Product
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Total
@@ -121,8 +102,7 @@ const OrdersTable = () => {
               </th>
             </tr>
           </thead>
-
-          <tbody className="divide divide-gray-700">
+          <tbody className="divide-y divide-gray-700">
             {filteredOrders.map((order) => (
               <motion.tr
                 key={order.id}
@@ -130,16 +110,19 @@ const OrdersTable = () => {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
               >
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">
+                <td className="px-6 py-4 text-sm font-medium text-gray-100">
                   {order.id}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">
+                <td className="px-6 py-4 text-sm font-medium text-gray-100">
                   {order.customer}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">
+                <td className="px-6 py-4 text-sm text-gray-300">
+                  {order.product}
+                </td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-100">
                   ₦{order.total.toFixed(2)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                <td className="px-6 py-4 text-sm">
                   <span
                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       order.status === "Delivered"
@@ -154,13 +137,22 @@ const OrdersTable = () => {
                     {order.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                  {order.date}
+                <td className="px-6 py-4 text-sm text-gray-300">
+                  {new Date(order.date).toLocaleString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                <td className="px-6 py-4 text-sm text-gray-300">
                   <button className="text-indigo-400 hover:text-indigo-300 mr-2">
                     <Eye size={18} />
                   </button>
+                  {order.status !== "Delivered" && (
+                    <button
+                      onClick={() => handleConfirmDelivery(order.id)}
+                      className="text-green-400 hover:text-green-300"
+                      title="Confirm Delivery"
+                    >
+                      <CheckCircle size={18} />
+                    </button>
+                  )}
                 </td>
               </motion.tr>
             ))}
@@ -170,4 +162,5 @@ const OrdersTable = () => {
     </motion.div>
   );
 };
+
 export default OrdersTable;

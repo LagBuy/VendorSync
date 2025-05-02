@@ -1,59 +1,59 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 
-const userData = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    role: "Customer",
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane@example.com",
-    role: "Also a Vendor",
-    status: "Active",
-  },
-  {
-    id: 3,
-    name: "Bob Johnson",
-    email: "bob@example.com",
-    role: "Customer",
-    status: "Inactive",
-  },
-  {
-    id: 4,
-    name: "Alice Brown",
-    email: "alice@example.com",
-    role: "Customer",
-    status: "Active",
-  },
-  {
-    id: 5,
-    name: "Charlie Wilson",
-    email: "charlie@example.com",
-    role: "Customer",
-    status: "Active",
-  },
-];
-
 const UsersTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredUsers, setFilteredUsers] = useState(userData);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+
+  // Fetch customers and map data
+  const fetchCustomers = async () => {
+    try {
+      const res = await fetch("https://your-backend-api/customers"); // Replace with your actual endpoint
+      const data = await res.json();
+
+      const mappedData = data.map((user) => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role:
+          user.businessType?.toLowerCase() === "vendor"
+            ? "Also a Vendor"
+            : "Customer",
+        status: user.isActive ? "Active" : "Inactive",
+        lastPurchaseDate: user.lastPurchaseDate || "N/A",
+        productPurchased: user.lastProductPurchased || "N/A",
+      }));
+
+      setAllUsers(mappedData);
+      setFilteredUsers(mappedData);
+    } catch (err) {
+      console.error("Error fetching customers:", err);
+    }
+  };
 
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
-    const filtered = userData.filter(
+
+    const filtered = allUsers.filter(
       (user) =>
         user.name.toLowerCase().includes(term) ||
         user.email.toLowerCase().includes(term)
     );
+
     setFilteredUsers(filtered);
   };
+
+  const viewOrders = (userId) => {
+    // Implement your view orders logic or routing here
+    alert(`Viewing orders for customer ID: ${userId}`);
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
 
   return (
     <motion.div
@@ -63,7 +63,7 @@ const UsersTable = () => {
       transition={{ delay: 0.2 }}
     >
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-100"> Customers </h2>
+        <h2 className="text-xl font-semibold text-gray-100">Customers</h2>
         <div className="relative">
           <input
             type="text"
@@ -80,19 +80,25 @@ const UsersTable = () => {
         <table className="min-w-full divide-y divide-gray-700">
           <thead>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                 Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                 Email
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                 Role
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                Last Purchase
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                Product
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                 Actions
               </th>
             </tr>
@@ -124,6 +130,7 @@ const UsersTable = () => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-300">{user.email}</div>
                 </td>
+
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-800 text-blue-100">
                     {user.role}
@@ -143,12 +150,18 @@ const UsersTable = () => {
                 </td>
 
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                  <button className="text-indigo-400 hover:text-indigo-300 mr-2">
-                    Edit
-                  </button>
-                  <button className="text-red-400 hover:text-red-300">
-                    Delete
-                  </button>
+                  {user.lastPurchaseDate}
+                </td>
+
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                  {user.productPurchased}
+                </td>
+
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                  <button
+                    onClick={() => viewOrders(user.id)}
+                    className="text-indigo-400 hover:text-indigo-300 mr-2"
+                  ></button>
                 </td>
               </motion.tr>
             ))}
@@ -158,4 +171,5 @@ const UsersTable = () => {
     </motion.div>
   );
 };
+
 export default UsersTable;

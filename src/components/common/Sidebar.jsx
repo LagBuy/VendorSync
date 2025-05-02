@@ -1,10 +1,12 @@
 import {
   BarChart2,
   Menu,
+  DollarSign,
   Settings,
   ShoppingBag,
   ShoppingCart,
   TrendingUp,
+  WalletCards,
   Users,
 } from "lucide-react";
 
@@ -21,9 +23,15 @@ const SIDEBAR_ITEMS = [
   },
   { name: "Products", icon: ShoppingBag, color: "#8B5CF6", href: "/products" },
   { name: "Customers", icon: Users, color: "#EC4899", href: "/users" },
-  // { name: "Sales", icon: DollarSign, color: "#10B981", href: "/sales" },
+  { name: "Sales", icon: DollarSign, color: "#10B981", href: "/sales" },
   { name: "Orders", icon: ShoppingCart, color: "#F59E0B", href: "/orders" },
   { name: "Analytics", icon: TrendingUp, color: "#3B82F6", href: "/analytics" },
+  {
+    name: "Payment",
+    icon: WalletCards,
+    color: "#3B82F6",
+    href: "/payment",
+  },
   { name: "Settings", icon: Settings, color: "#6EE7B7", href: "/settings" },
 ];
 
@@ -35,9 +43,9 @@ const Sidebar = () => {
       className={`relative z-10 transition-all duration-300 ease-in-out flex-shrink-0 ${
         isSidebarOpen ? "w-64" : "w-20"
       }`}
-      animate={{ width: isSidebarOpen ? 256 : 80 }}
+      animate={{ width: isSidebarOpen ? 150 : 100 }}
     >
-      <div className="h-full bg-gray-800 bg-opacity-50 backdrop-blur-md p-4 flex flex-col border-r border-gray-700">
+      <div className="h-screen bg-gray-800 p-4 flex flex-col border-r border-gray-700">
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
@@ -47,10 +55,11 @@ const Sidebar = () => {
           <Menu size={24} />
         </motion.button>
 
-        <nav className="mt-8 flex-grow">
+        {/* Make the nav scrollable */}
+        <nav className="mt-8 flex-grow overflow-y-auto">
           {SIDEBAR_ITEMS.map((item) => (
             <Link key={item.href} to={item.href}>
-              <motion.div className="flex items-center p-4 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors mb-2">
+              <motion.div className="flex items-center p-4 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors mb-2 space-x-3 lg:flex-col lg:items-center lg:space-x-0 lg:space-y-10">
                 <item.icon
                   size={20}
                   style={{ color: item.color, minWidth: "20px" }}
@@ -58,7 +67,7 @@ const Sidebar = () => {
                 <AnimatePresence>
                   {isSidebarOpen && (
                     <motion.span
-                      className="ml-4 whitespace-nowrap"
+                      className="whitespace-nowrap"
                       initial={{ opacity: 0, width: 0 }}
                       animate={{ opacity: 1, width: "auto" }}
                       exit={{ opacity: 0, width: 0 }}
@@ -76,4 +85,5 @@ const Sidebar = () => {
     </motion.div>
   );
 };
+
 export default Sidebar;

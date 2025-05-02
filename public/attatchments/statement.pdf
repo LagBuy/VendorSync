@@ -1,0 +1,7 @@
+import { jsPDF } from "jspdf";
+
+const generatePdf = () => {
+  const doc = new jsPDF();
+  doc.text("Hello, this is your invoice!", 20, 20);
+  doc.save("statement.pdf"); // downloads automatically
+};

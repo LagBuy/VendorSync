@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   PieChart,
@@ -8,24 +9,34 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const channelData = [
-  { name: "Organic Search", value: 4000 },
-  { name: "Paid Search", value: 3000 },
-  { name: "Direct", value: 2000 },
-  { name: "Social Media", value: 2780 },
-  { name: "Referral", value: 1890 },
-  { name: "Email", value: 2390 },
-];
+// Define your custom color palette
 const COLORS = [
-  "#8884d8",
-  "#82ca9d",
-  "#ffc658",
-  "#ff8042",
-  "#0088FE",
-  "#00C49F",
+  "#1F2937", // Dark Gray
+  "#10B981", // Emerald
+  "#3B82F6", // Blue
+  "#F59E0B", // Amber
+  "#EF4444", // Red
+  "#8B5CF6", // Violet
 ];
 
 const ChannelPerformance = () => {
+  const [channelData, setChannelData] = useState([]);
+
+  useEffect(() => {
+    // Fetch live data from your API endpoint
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/channel-performance");
+        const data = await response.json();
+        setChannelData(data);
+      } catch (error) {
+        console.error("Error fetching channel performance data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <motion.div
       className="bg-gray-800 bg-opacity-50 backdrop-filter backdrop-blur-lg shadow-lg rounded-xl p-6 border border-gray-700"

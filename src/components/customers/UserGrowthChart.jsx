@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -8,17 +9,65 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { motion } from "framer-motion";
-
-const userGrowthData = [
-  { month: "Jan", users: 1000 },
-  { month: "Feb", users: 1500 },
-  { month: "Mar", users: 2000 },
-  { month: "Apr", users: 3000 },
-  { month: "May", users: 4000 },
-  { month: "Jun", users: 5000 },
-];
+import axios from "axios";
+import dayjs from "dayjs";
 
 const UserGrowthChart = () => {
+  const [userGrowthData, setUserGrowthData] = useState([]);
+
+  useEffect(() => {
+    const fetchUserGrowth = async () => {
+      try {
+        const res = await axios.get("/api/customers");
+        const customers = res.data;
+
+        // Group users by month
+        const groupedByMonth = customers.reduce((acc, customer) => {
+          const month = dayjs(
+            customer.createdAt || customer.lastPurchase
+          ).format("MMM");
+          if (!acc[month]) {
+            acc[month] = 0;
+          }
+          acc[month]++;
+          return acc;
+        }, {});
+
+        // Convert to chart data
+        const data = Object.keys(groupedByMonth).map((month) => ({
+          month,
+          users: groupedByMonth[month],
+        }));
+
+        // Sort months correctly
+        const sortedMonths = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+
+        const sortedData = sortedMonths
+          .map((month) => data.find((d) => d.month === month))
+          .filter(Boolean); // remove undefined
+
+        setUserGrowthData(sortedData);
+      } catch (error) {
+        console.error("Failed to fetch customer growth:", error);
+      }
+    };
+
+    fetchUserGrowth();
+  }, []);
+
   return (
     <motion.div
       className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-6 border border-gray-700"
@@ -56,4 +105,5 @@ const UserGrowthChart = () => {
     </motion.div>
   );
 };
+
 export default UserGrowthChart;
