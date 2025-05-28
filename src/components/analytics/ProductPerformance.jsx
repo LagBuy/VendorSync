@@ -10,18 +10,29 @@ import {
   YAxis,
 } from "recharts";
 import { motion } from "framer-motion";
+import { toast } from "react-toastify";
+import { axiosInstance } from "../../axios-instance/axios-instance";
 
 const ProductPerformance = () => {
   const [productData, setProductData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProductPerformance = async () => {
+      setIsLoading(true);
       try {
-        const response = await fetch("/api/product-performance"); // Replace with your actual API endpoint
-        const data = await response.json();
-        setProductData(data);
+        const { data } = await axiosInstance.get("/product-performance/");
+        setProductData(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error("Failed to fetch product performance data:", error);
+        console.error("Failed to fetch product performance data:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        setProductData([]);
+        toast.error(error.response?.data?.message || "Failed to load product performance data.");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -38,27 +49,39 @@ const ProductPerformance = () => {
       <h2 className="text-xl font-semibold text-gray-100 mb-4">
         Product Performance
       </h2>
-      <p>This shows how good or bad your product is doing in the market.</p>
-      <div style={{ width: "100%", height: 300 }}>
-        <ResponsiveContainer>
-          <BarChart data={productData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis dataKey="name" stroke="#9CA3AF" />
-            <YAxis stroke="#9CA3AF" />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "rgba(31, 41, 55, 0.8)",
-                borderColor: "#4B5563",
-              }}
-              itemStyle={{ color: "#E5E7EB" }}
-            />
-            <Legend />
-            <Bar dataKey="sales" fill="#8B5CF6" />
-            <Bar dataKey="revenue" fill="#10B981" />
-            <Bar dataKey="profit" fill="#F59E0B" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      <p className="text-gray-300 mb-4">
+        This shows how good or bad your product is doing in the market.
+      </p>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-[300px] text-gray-400">
+          Loading...
+        </div>
+      ) : productData.length > 0 ? (
+        <div style={{ width: "100%", height: 300 }}>
+          <ResponsiveContainer>
+            <BarChart data={productData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" />
+              <XAxis dataKey="name" stroke="#000000" />
+              <YAxis stroke="#000000" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "rgba(31, 31, 31, 0.8)",
+                  borderColor: "#4B5563",
+                }}
+                itemStyle={{ color: "#E5E7EB" }}
+              />
+              <Legend />
+              <Bar dataKey="sales" fill="#8B5CF6" />
+              <Bar dataKey="revenue" fill="#10B981" />
+              <Bar dataKey="profit" fill="#F59E0B" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="flex justify-center items-center h-[300px] text-gray-400">
+          No product performance data available.
+        </div>
+      )}
     </motion.div>
   );
 };

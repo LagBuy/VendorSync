@@ -9,41 +9,34 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { motion } from "framer-motion";
+import { toast } from "react-toastify";
+import { axiosInstance } from "../../axios-instance/axios-instance";
 
 const SalesOverviewChart = () => {
   const [salesData, setSalesData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
   const fetchSalesData = async () => {
     const MIN_SPINNER_TIME = 3000;
     const startTime = Date.now();
 
+    setLoading(true);
     try {
-      const response = await fetch("/api/sales");
-      if (!response.ok) throw new Error("Failed to fetch sales data");
-      const data = await response.json();
-
+      const { data } = await axiosInstance.get("/dashboard/sales-overview");
       const formatted = data.map((item, index) => ({
         name: item.month || `Month ${index + 1}`,
         sales: item.sales,
       }));
 
       setSalesData(formatted);
-      setToast({
-        show: true,
-        message: "Sales data loaded successfully ✅",
-        type: "success",
+      toast.success("Sales data loaded successfully ✅");
+    } catch (error) {
+      console.error("Error fetching sales data:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
       });
-
-      setTimeout(() => setToast({ show: false, message: "", type: "" }), 5000);
-    } catch (err) {
-      console.error("Error fetching sales data:", err);
-      setToast({
-        show: true,
-        message: "⚠️ Failed to load sales data.",
-        type: "error",
-      });
+      toast.error(error.response?.data?.message || "Failed to load sales data.");
     } finally {
       const elapsed = Date.now() - startTime;
       const delay = Math.max(0, MIN_SPINNER_TIME - elapsed);
@@ -54,10 +47,6 @@ const SalesOverviewChart = () => {
   useEffect(() => {
     fetchSalesData();
   }, []);
-
-  const handleCloseToast = () => {
-    setToast({ show: false, message: "", type: "" });
-  };
 
   const handleRetry = () => {
     setLoading(true);
@@ -73,34 +62,19 @@ const SalesOverviewChart = () => {
     >
       <h2 className="text-lg font-medium mb-4 text-gray-100">Sales Overview</h2>
 
-      {/* Toast Notification */}
-      {toast.show && (
-        <div
-          className={`absolute top-4 right-4 px-4 py-2 rounded shadow-md z-50 flex items-center justify-between gap-2 min-w-[280px] ${
-            toast.type === "error"
-              ? "bg-red-600 text-white animate-pulse"
-              : "bg-green-600 text-white"
-          }`}
-        >
-          <span>{toast.message}</span>
-          <button
-            onClick={handleCloseToast}
-            className="text-white font-bold ml-4"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
       <div className="h-80">
         {loading ? (
           <div className="flex flex-col justify-center items-center h-full text-white space-y-3">
             <div className="text-4xl animate-spin-slow">📈</div>
             <p className="text-sm">Fetching chart data...</p>
           </div>
+        ) : salesData.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-white">
+            No sales data available.
+          </div>
         ) : (
           <ResponsiveContainer width={"100%"} height={"100%"}>
-            <LineChart data={salesData}>
+            <LineChart key={salesData.length} data={salesData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" />
               <XAxis dataKey={"name"} stroke="#9ca3af" />
               <YAxis stroke="#9ca3af" />
@@ -125,19 +99,13 @@ const SalesOverviewChart = () => {
       </div>
 
       {/* Retry Button for Error */}
-      {toast.type === "error" && (
+      {salesData.length === 0 && !loading && (
         <div className="flex justify-center mt-4 gap-4">
           <button
             onClick={handleRetry}
             className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             Retry
-          </button>
-          <button
-            onClick={handleCloseToast}
-            className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
-          >
-            Okay
           </button>
         </div>
       )}

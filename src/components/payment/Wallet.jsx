@@ -10,13 +10,12 @@ const Wallet = ({ selectedAmount }) => {
   const [formData, setFormData] = useState({
     accountNumber: "",
     password: "",
-    amount: selectedAmount, // Initial amount from props
+    amount: selectedAmount,
   });
   const [accountName, setAccountName] = useState("");
   const [bankName, setBankName] = useState("");
   const [errors, setErrors] = useState({});
 
-  // Update amount if selectedAmount changes
   useEffect(() => {
     setFormData((prev) => ({ ...prev, amount: selectedAmount }));
   }, [selectedAmount]);
@@ -39,7 +38,7 @@ const Wallet = ({ selectedAmount }) => {
     }
 
     if (name === "amount") {
-      const positiveValue = Math.max(0, Number(value)); // ✅ Force positive numbers
+      const positiveValue = Math.max(0, Number(value));
       setFormData((prev) => ({ ...prev, amount: positiveValue }));
       return;
     }
@@ -111,28 +110,31 @@ const Wallet = ({ selectedAmount }) => {
 
   return (
     <motion.div
-      className="bg-gray-900 text-white p-8 rounded-xl shadow-xl mb-3 border border-gray-700"
+      className="bg-gray-900 text-white p-4 sm:p-6 rounded-xl shadow-xl mb-4 border border-gray-700 w-full max-w-md mx-auto"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
     >
       <ToastContainer />
-      <div className="flex items-center mb-6">
+      <div className="flex items-center mb-4">
         <Wallet2Icon className="text-yellow-400 mr-3" size={28} />
         <h2 className="text-xl font-bold">Withdraw Funds</h2>
       </div>
-      <p className="text-md text-gray-400 mb-3">
+      <p className="text-sm text-gray-400 mb-4">
         Submit your account details to request a payout.
       </p>
       <button
-        className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 px-2 rounded-sm shadow-md transition-all duration-300 ease-in-out transform hover:scale-105"
+        className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 px-4 rounded-md shadow-md w-full mb-3"
         onClick={() => setShowForm(true)}
       >
         Withdraw
       </button>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="mt-2 space-y-2">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 overflow-y-auto max-h-[80vh] sm:max-h-full"
+        >
           <div>
             <label className="block text-sm text-gray-300 mb-1">
               Account Number
@@ -142,7 +144,7 @@ const Wallet = ({ selectedAmount }) => {
               name="accountNumber"
               value={formData.accountNumber}
               onChange={handleInputChange}
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-200"
+              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-200"
               placeholder="Enter 10-digit account number"
             />
             {errors.accountNumber && (
@@ -164,7 +166,7 @@ const Wallet = ({ selectedAmount }) => {
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-200"
+              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-200"
               placeholder="Enter your password"
             />
             {errors.password && (
@@ -180,7 +182,7 @@ const Wallet = ({ selectedAmount }) => {
               value={formData.amount}
               onChange={handleInputChange}
               min="1"
-              className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-200"
+              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-200"
               placeholder="Enter amount"
             />
             {errors.amount && (
@@ -188,17 +190,17 @@ const Wallet = ({ selectedAmount }) => {
             )}
           </div>
 
-          <div className="flex justify-between space-x-3">
+          <div className="flex flex-col sm:flex-row sm:space-x-3 space-y-3 sm:space-y-0">
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-3 rounded-xl"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-md"
             >
               Submit
             </button>
             <button
               type="button"
               onClick={handleCancel}
-              className="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 px-3 rounded-xl"
+              className="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-md"
             >
               Cancel
             </button>
@@ -210,3 +212,6 @@ const Wallet = ({ selectedAmount }) => {
 };
 
 export default Wallet;
+
+
+//  NO ENDPOINT INTEGRATION HERE YET

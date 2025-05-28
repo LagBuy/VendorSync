@@ -1,6 +1,9 @@
-import { useState, useEffect } from "react";
-import { UserCheck, UserPlus, UsersIcon, UserX } from "lucide-react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { axiosInstance } from "../axios-instance/axios-instance";
+import { UserCheck, UserPlus, UsersIcon, UserX } from "lucide-react";
 import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
 import UsersTable from "../components/customers/UsersTable";
@@ -8,20 +11,13 @@ import UserGrowthChart from "../components/customers/UserGrowthChart";
 import UserActivityHeatmap from "../components/customers/UserActivityHeatmap";
 import UserDemographicsChart from "../components/customers/UserDemographicsChart";
 
-// Fetching logic for dynamic customer stats
-const fetchCustomers = async () => {
-  // Make an API call to get all customers and their purchase history
-  const response = await fetch("https://your-backend-api/customers"); // Replace with your actual backend endpoint
-  const data = await response.json();
-  return data;
-};
-
 const UsersPage = () => {
   const [customers, setCustomers] = useState([]);
   const [totalCustomers, setTotalCustomers] = useState(0);
   const [newCustomersToday, setNewCustomersToday] = useState(0);
   const [activeCustomers, setActiveCustomers] = useState(0);
   const [lostCustomers, setLostCustomers] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   // Function to calculate customer stats
   const calculateCustomerStats = (customers) => {
@@ -57,17 +53,37 @@ const UsersPage = () => {
 
   useEffect(() => {
     const loadCustomers = async () => {
-      const customersData = await fetchCustomers();
-      setCustomers(customersData);
-      calculateCustomerStats(customersData);
+      setLoading(true);
+      try {
+        const { data } = await axiosInstance.get("/customers");
+        setCustomers(data);
+        calculateCustomerStats(data);
+        toast.success("Customer data loaded successfully!", {
+          position: "top-center",
+        });
+      } catch (error) {
+        console.error("Error fetching customers:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        toast.error(
+          error.response?.data?.message || "Failed to load customer data.",
+          { position: "top-center" }
+        );
+      } finally {
+        setLoading(false);
+      }
     };
 
-    loadCustomers(); // Fetch customers data on mount
+    loadCustomers();
   }, []);
 
   return (
     <div className="flex-1 overflow-auto relative z-10">
       <Header title="Customers" />
+      <ToastContainer />
+
       <main className="max-w-7xl mx-auto py-6 px-4 lg:px-8">
         {/* STATS */}
         <motion.div
@@ -76,33 +92,43 @@ const UsersPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
         >
-          <StatCard
-            name="Total Customers"
-            icon={UsersIcon}
-            value={totalCustomers.toLocaleString()}
-            color="#6366F1"
-          />
-          <StatCard
-            name="New Customers Today"
-            icon={UserPlus}
-            value={newCustomersToday}
-            color="#10B981"
-          />
-          <StatCard
-            name="Active Customers"
-            icon={UserCheck}
-            value={activeCustomers.toLocaleString()}
-            color="#F59E0B"
-          />
-          <StatCard
-            name="Lost Customers"
-            icon={UserX}
-            value={lostCustomers}
-            color="#EF4444"
-          />
+          {loading ? (
+            <div className="col-span-4 text-center text-white">Loading...</div>
+          ) : (
+            <>
+              <StatCard
+                name="Total Customers"
+                icon={UsersIcon}
+                value={totalCustomers.toLocaleString()}
+                color="#6366F1"
+              />
+              <StatCard
+                name="New Customers Today"
+                icon={UserPlus}
+                value={newCustomersToday}
+                color="#10B981"
+              />
+              <StatCard
+                name="Active Customers"
+                icon={UserCheck}
+                value={activeCustomers.toLocaleString()}
+                color="#F59E0B"
+              />
+              <StatCard
+                name="Lost Customers"
+                icon={UserX}
+                value={lostCustomers}
+                color="#EF4444"
+              />
+            </>
+          )}
         </motion.div>
 
-        <UsersTable customers={customers} />
+        {loading ? (
+          <div className="text-center text-white">Loading customers...</div>
+        ) : (
+          <UsersTable customers={customers} />
+        )}
 
         {/* USER CHARTS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">

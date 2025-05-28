@@ -11,6 +11,7 @@ import {
   Cell,
 } from "recharts";
 import { useState, useEffect } from "react";
+import { axiosInstance } from "../../axios-instance/axios-instance";
 
 const COLORS = ["#6366F1", "#8B5CF6", "#EC4899", "#10B981", "#F59E0B"];
 
@@ -19,13 +20,10 @@ const SalesChannelChart = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Function to fetch sales data dynamically
   const fetchSalesChannelData = async () => {
     try {
-      const response = await fetch("/api/sales/channels"); // Replace with actual API endpoint
-      if (!response.ok) throw new Error("Failed to fetch sales channel data");
-      const data = await response.json();
-      setSalesChannelData(data);
+      const response = await axiosInstance.get("/sales/channels");
+      setSalesChannelData(response.data);
     } catch (err) {
       console.error("Error fetching sales channel data:", err);
       setError("Failed to load sales data");
@@ -39,7 +37,7 @@ const SalesChannelChart = () => {
   }, []);
 
   const handleCloseModal = () => {
-    setError(""); // Close the error modal
+    setError("");
   };
 
   return (
@@ -49,28 +47,21 @@ const SalesChannelChart = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
     >
-      <h2 className="text-lg font-medium mb-4 text-gray-100">
-        Sales by Channel
-      </h2>
-      <p>This shows how much you make via various platforms</p>
+      <h2 className="text-lg font-medium mb-2 text-gray-100">Sales by Channel</h2>
+      <p className="text-gray-300 mb-4">This shows how much you make via various platforms</p>
 
-      {/* Modal for error message */}
+      {/* Error Modal */}
       {error && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-red-600 text-white px-6 py-4 rounded-md max-w-md w-full">
+          <div className="bg-red-600 text-white px-6 py-4 rounded-md max-w-sm w-full">
             <div className="flex justify-between items-center">
               <h3 className="font-semibold text-lg">Error</h3>
-              <button
-                className="text-white font-bold"
-                onClick={handleCloseModal}
-              >
-                ×
-              </button>
+              <button onClick={handleCloseModal} className="text-xl font-bold">×</button>
             </div>
-            <p>{error}</p>
+            <p className="mt-2">{error}</p>
             <div className="flex justify-center mt-4">
               <button
-                className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
                 onClick={handleCloseModal}
               >
                 Close
@@ -82,7 +73,9 @@ const SalesChannelChart = () => {
 
       <div className="h-80">
         {loading ? (
-          <div className="flex justify-center py-10 text-white">Loading...</div>
+          <div className="flex justify-center items-center h-full text-white">
+            Loading...
+          </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={salesChannelData}>
@@ -91,7 +84,7 @@ const SalesChannelChart = () => {
               <YAxis stroke="#9CA3AF" />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "rgba(31, 41, 55, 0.8)",
+                  backgroundColor: "rgba(31, 41, 55, 0.9)",
                   borderColor: "#4B5563",
                 }}
                 itemStyle={{ color: "#E5E7EB" }}

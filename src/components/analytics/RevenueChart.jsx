@@ -10,92 +10,13 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-
-// Helper function to generate mock data
-const generateData = (labels, baseRevenue, targetValue) => {
-  return labels.map((label, i) => {
-    const revenue = baseRevenue + i * 200;
-    return {
-      period: label,
-      revenue,
-      target: targetValue !== null ? targetValue : Math.round(revenue * 0.9),
-    };
-  });
-};
-
-const getRevenueData = (range, customTargets) => {
-  const now = new Date();
-  const customTarget = customTargets[range] || null;
-
-  const formatDay = (offset) => {
-    const day = new Date(now);
-    day.setDate(now.getDate() - offset);
-    return day.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const formatWeek = (count) =>
-    Array.from({ length: count }, (_, i) => `Week ${i + 1}`);
-
-  const formatMonth = () => [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-
-  switch (range) {
-    case "Today":
-      return generateData([formatDay(0)], 300, customTarget);
-    case "3 Days":
-      return generateData(
-        [0, 1, 2].map(formatDay).reverse(),
-        300,
-        customTarget
-      );
-    case "One Week":
-      return generateData(
-        Array.from({ length: 7 }, (_, i) => formatDay(i)).reverse(),
-        300,
-        customTarget
-      );
-    case "14 Days":
-      return generateData(
-        Array.from({ length: 14 }, (_, i) => formatDay(i)).reverse(),
-        300,
-        customTarget
-      );
-    case "One Month":
-      return generateData(
-        Array.from({ length: 30 }, (_, i) => formatDay(i)).reverse(),
-        300,
-        customTarget
-      );
-    case "3 Months":
-      return generateData(formatWeek(12), 1000, customTarget);
-    case "6 Months":
-      return generateData(formatWeek(24), 1200, customTarget);
-    case "9 Months":
-      return generateData(formatWeek(36), 1300, customTarget);
-    case "One Year":
-    default:
-      return generateData(formatMonth(), 4000, customTarget);
-  }
-};
+import { toast } from "react-toastify";
+import { axiosInstance } from "../../axios-instance/axios-instance";
 
 const RevenueChart = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState("One Month");
   const [data, setData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [inputTarget, setInputTarget] = useState("");
   const [customTargets, setCustomTargets] = useState({
     Today: null,
@@ -111,8 +32,34 @@ const RevenueChart = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const chartData = getRevenueData(selectedTimeRange, customTargets);
-    setData(chartData);
+    const fetchRevenueData = async () => {
+      setIsLoading(true);
+      try {
+        const { data: result } = await axiosInstance.get("/revenue/", {
+          params: { range: selectedTimeRange },
+        });
+        const chartData = Array.isArray(result)
+          ? result.map((item) => ({
+              period: item.period,
+              revenue: item.revenue,
+              target: customTargets[selectedTimeRange] ?? item.target,
+            }))
+          : [];
+        setData(chartData);
+      } catch (error) {
+        console.error("Failed to fetch revenue data:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        setData([]);
+        toast.error(error.response?.data?.message || "Failed to load revenue data.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRevenueData();
   }, [selectedTimeRange, customTargets]);
 
   useEffect(() => {
@@ -200,37 +147,47 @@ const RevenueChart = () => {
         )}
       </AnimatePresence>
 
-      <div style={{ width: "100%", height: 400 }}>
-        <ResponsiveContainer>
-          <AreaChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis dataKey="period" stroke="#9CA3AF" />
-            <YAxis stroke="#9CA3AF" />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "rgba(31, 41, 55, 0.8)",
-                borderColor: "#4B5563",
-              }}
-              itemStyle={{ color: "#E5E7EB" }}
-            />
-            <Legend />
-            <Area
-              type="monotone"
-              dataKey="revenue"
-              stroke="#8B5CF6"
-              fill="#8B5CF6"
-              fillOpacity={0.3}
-            />
-            <Area
-              type="monotone"
-              dataKey="target"
-              stroke="#10B981"
-              fill="#10B981"
-              fillOpacity={0.3}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-[400px] text-gray-400">
+          Loading...
+        </div>
+      ) : data.length > 0 ? (
+        <div style={{ width: "100%", height: 400 }}>
+          <ResponsiveContainer>
+            <AreaChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="period" stroke="#9CA3AF" />
+              <YAxis stroke="#9CA3AF" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "rgba(31, 41, 55, 0.8)",
+                  borderColor: "#4B5563",
+                }}
+                itemStyle={{ color: "#E5E7EB" }}
+              />
+              <Legend />
+              <Area
+                type="monotone"
+                dataKey="revenue"
+                stroke="#8B5CF6"
+                fill="#8B5CF6"
+                fillOpacity={0.3}
+              />
+              <Area
+                type="monotone"
+                dataKey="target"
+                stroke="#10B981"
+                fill="#10B981"
+                fillOpacity={0.3}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="flex justify-center items-center h-[400px] text-gray-400">
+          No revenue data available.
+        </div>
+      )}
     </motion.div>
   );
 };

@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { axiosInstance } from "../../axios-instance/axios-instance";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -13,17 +16,10 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
 } from "@heroicons/react/24/solid";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 
-ChartJS.register(
-  LineElement,
-  PointElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend
-);
+import DatePicker from "react-datepicker";
+
+ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 // Month names
 const months = [
@@ -41,31 +37,79 @@ const months = [
   "Dec",
 ];
 
-// Dummy data for each month
-const generateDummyData = () =>
-  months.map(() => ({
-    credit: Math.floor(Math.random() * 10000),
-    debit: Math.floor(Math.random() * 8000),
-  }));
-
-const fullYearData = generateDummyData();
-
 const CreditDebitChart = () => {
   const [startDate, setStartDate] = useState(
     new Date(new Date().getFullYear(), 0, 1)
   ); // Jan 1st
-  const [endDate, setEndDate] = useState(new Date()); // today
+  const [endDate, setEndDate] = useState(new Date()); // Today
+  const [chartDataList, setChartDataList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Convert date to month index
-  const getMonthIndex = (date) => date.getMonth();
+  // Format date to YYYY-MM for API query
+  const formatDateForApi = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  };
+
+  useEffect(() => {
+    const fetchChartData = async () => {
+      setLoading(true);
+      try {
+        const startMonth = formatDateForApi(startDate);
+        const endMonth = formatDateForApi(endDate);
+        const { data } = await axiosInstance.get("/credit-debit", {
+          params: { startMonth, endMonth },
+        });
+        setChartDataList(
+          data.map((item) => ({
+            credit: item.credit ?? 0,
+            debit: item.debit ?? 0,
+            month: item.month,
+          }))
+        );
+        toast.success("Credit and debit data loaded successfully!", {
+          position: "top-center",
+        });
+      } catch (error) {
+        console.error("Error fetching credit/debit data:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        toast.error(
+          error.response?.data?.message || "Failed to load credit/debit data.",
+          { position: "top-center" }
+        );
+        setChartDataList([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChartData();
+  }, [startDate, endDate]);
 
   const getFilteredData = () => {
-    const startMonth = getMonthIndex(startDate);
-    const endMonth = getMonthIndex(endDate);
+    if (!chartDataList.length) {
+      return { labels: [], data: [] };
+    }
+
+    const startMonth = startDate.getMonth();
+    const endMonth = endDate.getMonth() + (endDate.getFullYear() > startDate.getFullYear() ? 12 : 0);
+
+    const filteredData = chartDataList.filter((item) => {
+      const [year, month] = item.month.split('-').map(Number);
+      const monthIndex = (year - startDate.getFullYear()) * 12 + (month - 1);
+      return monthIndex >= startMonth && monthIndex <= endMonth;
+    });
 
     return {
-      labels: months.slice(startMonth, endMonth + 1),
-      data: fullYearData.slice(startMonth, endMonth + 1),
+      labels: filteredData.map((item) => {
+        const monthIndex = Number(item.month.split('-')[1]) - 1;
+        return months[monthIndex];
+      }),
+      data: filteredData,
     };
   };
 
@@ -105,13 +149,14 @@ const CreditDebitChart = () => {
       },
       y: {
         ticks: { color: "white" },
-        grid: { color: "#444" },
+        grid: { color: "auto" },
       },
     },
   };
 
   return (
-    <div className="bg-gray-900 p-4 rounded-xl shadow-xl">
+    <div className="bg-gray-900 p-14 rounded-xl shadow-xl">
+      <ToastContainer />
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 mb-6">
         <h2 className="text-2xl font-bold text-white">
           Credit & Debit Summary
@@ -126,7 +171,8 @@ const CreditDebitChart = () => {
               onChange={(date) => setStartDate(date)}
               dateFormat="MMM yyyy"
               showMonthYearPicker
-              className="bg-gray-800 text-white py-2 px-4 rounded-xl font-medium"
+              className="bg-gray-800 text-white py-2 px-4 rounded-lg font-medium"
+              disabled={loading}
             />
           </div>
           <div className="flex flex-col">
@@ -136,7 +182,8 @@ const CreditDebitChart = () => {
               onChange={(date) => setEndDate(date)}
               dateFormat="MMM yyyy"
               showMonthYearPicker
-              className="bg-gray-800 text-white py-2 px-4 rounded-xl font-medium"
+              className="bg-gray-800 text-white py-2 px-4 rounded-lg font-medium"
+              disabled={loading}
             />
           </div>
         </div>
@@ -153,7 +200,34 @@ const CreditDebitChart = () => {
         </div>
       </div>
 
-      <Line data={chartData} options={options} />
+      {loading ? (
+        <div className="text-center py-6">
+          <svg
+            className="animate-spin h-8 w-8 text-white mx-auto"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v8H4z"
+            />
+          </svg>
+        </div>
+      ) : chartDataList.length === 0 ? (
+        <div className="text-center py-6 text-gray-400">
+          No data available for the selected period.
+        </div>
+      ) : (
+        <Line data={chartData} options={options} />
+      )}
     </div>
   );
 };

@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { axiosInstance } from "../axios-instance/axios-instance";
 import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
 import { CreditCard, DollarSign, ShoppingCart, TrendingUp } from "lucide-react";
@@ -14,32 +17,32 @@ const SalesPage = () => {
     conversionRate: 0,
     salesGrowth: 0,
   });
-
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
   useEffect(() => {
     const fetchSalesStats = async () => {
+      setLoading(true);
       try {
-        const response = await fetch("/api/sales-stats"); // Replace with your actual API endpoint
-        if (!response.ok) throw new Error("Failed to fetch sales stats");
-        const data = await response.json();
+        const { data } = await axiosInstance.get("/sales-stats");
         setSalesStats({
-          totalRevenue: data.totalRevenue,
-          averageOrderValue: data.averageOrderValue,
-          conversionRate: data.conversionRate,
-          salesGrowth: data.salesGrowth,
+          totalRevenue: data.totalRevenue ?? 0,
+          averageOrderValue: data.averageOrderValue ?? 0,
+          conversionRate: data.conversionRate ?? 0,
+          salesGrowth: data.salesGrowth ?? 0,
         });
-      } catch (err) {
-        console.error("Error fetching sales stats:", err);
-        setToast({
-          show: true,
-          message: "❌ Failed to load sales stats. Please try again.",
-          type: "error",
+        toast.success("Sales stats loaded successfully!", {
+          position: "top-center",
         });
-        setTimeout(() => {
-          setToast({ show: false, message: "", type: "" });
-        }, 5000);
+      } catch (error) {
+        console.error("Error fetching sales stats:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        toast.error(
+          error.response?.data?.message || "Failed to load sales stats.",
+          { position: "top-center" }
+        );
       } finally {
         setLoading(false);
       }
@@ -48,32 +51,10 @@ const SalesPage = () => {
     fetchSalesStats();
   }, []);
 
-  const handleCloseToast = () => {
-    setToast({ show: false, message: "", type: "" });
-  };
-
   return (
     <div className="flex-1 overflow-auto relative z-10">
       <Header title="Sales" />
-
-      {/* Toast Notification */}
-      {toast.show && (
-        <div
-          className={`animate-pulse absolute top-4 right-4 px-4 py-2 rounded shadow-md z-50 flex items-center justify-between gap-2 min-w-[280px] ${
-            toast.type === "error"
-              ? "bg-red-600 text-white"
-              : "bg-green-600 text-white"
-          }`}
-        >
-          <span>{toast.message}</span>
-          <button
-            onClick={handleCloseToast}
-            className="text-white font-bold ml-4"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <ToastContainer />
 
       <main className="max-w-7xl mx-auto py-6 px-4 lg:px-8">
         {/* SALES STATS */}

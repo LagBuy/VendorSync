@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trash2 } from "lucide-react";
+import { toast } from "react-toastify";
+import { axiosInstance } from "../../axios-instance/axios-instance";
+import Cookies from "js-cookie";
 
 const DangerZone = () => {
   const [confirming, setConfirming] = useState(false);
@@ -9,8 +12,6 @@ const DangerZone = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    bvn: "",
-    nin: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -25,10 +26,9 @@ const DangerZone = () => {
     if (yes) {
       setShowForm(true);
     } else {
-      // Animate cancel
       setConfirming(false);
       setShowForm(false);
-      setFormData({ email: "", password: "", bvn: "", nin: "" });
+      setFormData({ email: "", password: "" });
     }
   };
 
@@ -39,7 +39,7 @@ const DangerZone = () => {
   const handleCancel = () => {
     setConfirming(false);
     setShowForm(false);
-    setFormData({ email: "", password: "", bvn: "", nin: "" });
+    setFormData({ email: "", password: "" });
     setError("");
   };
 
@@ -50,28 +50,25 @@ const DangerZone = () => {
 
     try {
       // Archive the user first
-      await fetch("/api/archive-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      await axiosInstance.post("/archive-user", formData);
 
       // Then delete the user
-      const response = await fetch("/api/delete-account", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      await axiosInstance.delete("/delete-account", { data: formData });
 
-      if (!response.ok) {
-        throw new Error("Account deletion failed");
-      }
-
-      // Auto logout
+      toast.success("Account deleted successfully!");
+      // Clear auth data
+      Cookies.remove("jwt-token");
       localStorage.clear();
       navigate("/goodbye");
-    } catch (err) {
-      setError("Could not delete your account. Please check your info.");
+    } catch (error) {
+      console.error("Error deleting account:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+      const errorMessage = error.response?.data?.message || "Could not delete your account. Please check your info.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -99,6 +96,7 @@ const DangerZone = () => {
           <button
             onClick={handleDeleteClick}
             className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+            disabled={loading}
           >
             Delete Account
           </button>
@@ -119,12 +117,14 @@ const DangerZone = () => {
             <button
               onClick={() => handleConfirm(true)}
               className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mr-2 transition duration-200"
+              disabled={loading}
             >
               Yes
             </button>
             <button
               onClick={() => handleConfirm(false)}
               className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+              disabled={loading}
             >
               No
             </button>
@@ -153,6 +153,7 @@ const DangerZone = () => {
               value={formData.email}
               onChange={handleInputChange}
               className="w-full px-4 py-2 rounded bg-gray-800 border border-gray-700 text-gray-100"
+              disabled={loading}
             />
 
             <input
@@ -163,26 +164,7 @@ const DangerZone = () => {
               value={formData.password}
               onChange={handleInputChange}
               className="w-full px-4 py-2 rounded bg-gray-800 border border-gray-700 text-gray-100"
-            />
-
-            <input
-              name="bvn"
-              type="text"
-              required
-              placeholder="BVN"
-              value={formData.bvn}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 rounded bg-gray-800 border border-gray-700 text-gray-100"
-            />
-
-            <input
-              name="nin"
-              type="text"
-              required
-              placeholder="NIN"
-              value={formData.nin}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 rounded bg-gray-800 border border-gray-700 text-gray-100"
+              disabled={loading}
             />
 
             {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -199,6 +181,7 @@ const DangerZone = () => {
                 type="button"
                 onClick={handleCancel}
                 className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+                disabled={loading}
               >
                 Cancel
               </button>

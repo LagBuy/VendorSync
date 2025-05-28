@@ -10,8 +10,9 @@ import {
   YAxis,
 } from "recharts";
 import { motion } from "framer-motion";
-import axios from "axios";
+import { toast } from "react-toastify";
 import dayjs from "dayjs";
+import { axiosInstance } from "../../axios-instance/axios-instance";
 
 const timeIntervals = [
   { label: "0-4", start: 0, end: 4 },
@@ -26,13 +27,14 @@ const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const UserActivityHeatmap = () => {
   const [userActivityData, setUserActivityData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserActivity = async () => {
+      setIsLoading(true);
       try {
-        const res = await axios.get("/api/customer-activities");
-        const activities = res.data;
-
+        const { data: activities } = await axiosInstance.get("/customer-activities/");
+        
         // Initialize data structure
         const activityMap = {};
         daysOfWeek.forEach((day) => {
@@ -65,7 +67,15 @@ const UserActivityHeatmap = () => {
 
         setUserActivityData(chartData);
       } catch (error) {
-        console.error("Failed to fetch customer activity:", error);
+        console.error("Failed to fetch customer activity:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        setUserActivityData([]);
+        toast.error(error.response?.data?.message || "Failed to load customer activity data.");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -85,29 +95,39 @@ const UserActivityHeatmap = () => {
       <p className="text-gray-300 mb-4">
         This shows how well your customers are consuming your product/services.
       </p>
-      <div style={{ width: "100%", height: 300 }}>
-        <ResponsiveContainer>
-          <BarChart data={userActivityData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis dataKey="name" stroke="#9CA3AF" />
-            <YAxis stroke="#9CA3AF" />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "rgba(31, 41, 55, 0.8)",
-                borderColor: "#4B5563",
-              }}
-              itemStyle={{ color: "#E5E7EB" }}
-            />
-            <Legend />
-            <Bar dataKey="0-4" stackId="a" fill="#6366F1" />
-            <Bar dataKey="4-8" stackId="a" fill="#8B5CF6" />
-            <Bar dataKey="8-12" stackId="a" fill="#EC4899" />
-            <Bar dataKey="12-16" stackId="a" fill="#10B981" />
-            <Bar dataKey="16-20" stackId="a" fill="#F59E0B" />
-            <Bar dataKey="20-24" stackId="a" fill="#3B82F6" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-[300px] text-gray-400">
+          Loading...
+        </div>
+      ) : userActivityData.length > 0 ? (
+        <div style={{ width: "100%", height: 300 }}>
+          <ResponsiveContainer>
+            <BarChart data={userActivityData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="name" stroke="#9CA3AF" />
+              <YAxis stroke="#9CA3AF" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "rgba(31, 41, 55, 0.8)",
+                  borderColor: "#4B5563",
+                }}
+                itemStyle={{ color: "#E5E7EB" }}
+              />
+              <Legend />
+              <Bar dataKey="0-4" stackId="a" fill="#6366F1" />
+              <Bar dataKey="4-8" stackId="a" fill="#8B5CF6" />
+              <Bar dataKey="8-12" stackId="a" fill="#EC4899" />
+              <Bar dataKey="12-16" stackId="a" fill="#10B981" />
+              <Bar dataKey="16-20" stackId="a" fill="#F59E0B" />
+              <Bar dataKey="20-24" stackId="a" fill="#3B82F6" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="flex justify-center items-center h-[300px] text-gray-400">
+          No customer activity data available.
+        </div>
+      )}
     </motion.div>
   );
 };

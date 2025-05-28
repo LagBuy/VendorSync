@@ -1,20 +1,47 @@
+import { useState, useRef, useEffect } from "react";
+import { toast } from "react-toastify";
+import { axiosInstance } from "../../axios-instance/axios-instance";
 import { Lock } from "lucide-react";
 import SettingSection from "./SettingSection";
 import ToggleSwitch from "./ToggleSwitch";
-import { useState, useRef, useEffect } from "react";
 import Modal from "antd/es/modal/Modal";
 import ChangePassword from "./ChangePassword";
-import { ToastContainer } from "react-toastify"; // Import ToastContainer
-import "react-toastify/dist/ReactToastify.css"; // Import the styles
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Security = () => {
   const [twoFactor, setTwoFactor] = useState(false);
   const [password, setPassword] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [isFaceScanned, setIsFaceScanned] = useState(false); // Track if face scan is successful
-  const [capturedImage, setCapturedImage] = useState(null); // To store captured face image
-  const videoRef = useRef(null); // Reference to video element
-  const canvasRef = useRef(null); // Reference to canvas element
+  const [isFaceScanned, setIsFaceScanned] = useState(false);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  // Fetch 2FA status on mount
+  useEffect(() => {
+    const fetchTwoFactorStatus = async () => {
+      setLoading(true);
+      try {
+        const { data } = await axiosInstance.get("/two-factor");
+        setTwoFactor(data.enabled ?? false);
+        setIsFaceScanned(data.enabled ?? false); // Assume face scan is complete if 2FA is enabled
+        toast.success("2FA settings loaded successfully!");
+      } catch (error) {
+        console.error("Error fetching 2FA status:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        toast.error(error.response?.data?.message || "Failed to load 2FA settings.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTwoFactorStatus();
+  }, []);
 
   // Start face scan by accessing camera
   const startFaceScan = async () => {
@@ -24,21 +51,43 @@ const Security = () => {
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        setIsScanning(true); // Set isScanning to true when camera is active
+        setIsScanning(true);
       }
     } catch (err) {
-      console.error("Error accessing the camera: ", err);
-      setIsScanning(false); // In case of error, stop scanning
+      console.error("Error accessing the camera:", err);
+      toast.error("Failed to access camera for face scan.");
+      setIsScanning(false);
     }
   };
 
   // Stop face scan and finalize the process
-  const stopFaceScan = () => {
+  const stopFaceScan = async () => {
     const stream = videoRef.current?.srcObject;
     const tracks = stream?.getTracks();
     tracks?.forEach((track) => track.stop());
     setIsScanning(false);
-    setIsFaceScanned(true); // Simulate successful face scan
+
+    if (capturedImage) {
+      setLoading(true);
+      try {
+        await axiosInstance.post("/face-scan", { image: capturedImage });
+        setIsFaceScanned(true);
+        toast.success("Face scan completed successfully!");
+      } catch (error) {
+        console.error("Error uploading face scan:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        toast.error(error.response?.data?.message || "Failed to upload face scan.");
+        setTwoFactor(false); // Revert 2FA if face scan fails
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      toast.error("Please capture a face image before completing the scan.");
+      setTwoFactor(false); // Revert 2FA if no image is captured
+    }
   };
 
   // Capture image from video stream
@@ -52,7 +101,35 @@ const Security = () => {
       canvas.height = video.videoHeight;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       const image = canvas.toDataURL("image/png");
-      setCapturedImage(image); // Save the captured image
+      setCapturedImage(image);
+      toast.success("Face captured successfully!");
+    }
+  };
+
+  // Update 2FA status
+  const handleTwoFactorToggle = async () => {
+    const newTwoFactor = !twoFactor;
+    setLoading(true);
+    try {
+      await axiosInstance.patch("/two-factor", { enabled: newTwoFactor });
+      setTwoFactor(newTwoFactor);
+      if (newTwoFactor) {
+        startFaceScan();
+      } else {
+        stopFaceScan();
+        setIsFaceScanned(false);
+        setCapturedImage(null);
+      }
+      toast.success(`2FA ${newTwoFactor ? "enabled" : "disabled"} successfully!`);
+    } catch (error) {
+      console.error("Error updating 2FA status:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+      toast.error(error.response?.data?.message || "Failed to update 2FA status.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -69,20 +146,14 @@ const Security = () => {
         <ToggleSwitch
           label={"Two-Factor Authentication"}
           isOn={twoFactor}
-          onToggle={() => {
-            setTwoFactor(!twoFactor);
-            if (!twoFactor) {
-              startFaceScan(); // Start scanning when enabled
-            } else {
-              stopFaceScan(); // Stop scanning if 2FA is disabled
-            }
-          }}
+          onToggle={handleTwoFactorToggle}
+          disabled={loading}
         />
         <div className="mt-4">
           <button
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded
-          transition duration-200"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition duration-200"
             onClick={() => setPassword(true)}
+            disabled={loading}
           >
             Change Password
           </button>
@@ -102,8 +173,7 @@ const Security = () => {
               Face Scan for 2FA
             </h4>
             <p className="text-gray-400 text-sm mb-4">
-              Please align your face within the frame to enable two-factor
-              authentication.
+              Please align your face within the frame to enable two-factor authentication.
             </p>
             <div className="flex justify-center mb-4">
               <video
@@ -114,17 +184,19 @@ const Security = () => {
             </div>
             <canvas
               ref={canvasRef}
-              style={{ display: "none" }} // Hide the canvas
+              style={{ display: "none" }}
             ></canvas>
             <button
               onClick={captureFace}
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+              disabled={loading}
             >
               Capture Face
             </button>
             <button
               onClick={stopFaceScan}
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition duration-200 mt-4"
+              disabled={loading}
             >
               Complete Face Scan
             </button>
@@ -161,7 +233,6 @@ const Security = () => {
         )}
       </SettingSection>
 
-      {/* Add the ToastContainer here so that it's available globally */}
       <ToastContainer />
     </>
   );

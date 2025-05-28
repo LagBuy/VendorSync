@@ -10,6 +10,8 @@ import {
   Legend,
   Tooltip,
 } from "recharts";
+import { toast } from "react-toastify";
+import { axiosInstance } from "../../axios-instance/axios-instance";
 
 const CustomerSegmentation = () => {
   const [segmentationData, setSegmentationData] = useState([]);
@@ -18,14 +20,20 @@ const CustomerSegmentation = () => {
 
   useEffect(() => {
     const fetchSegmentationData = async () => {
+      setLoading(true);
       try {
-        const response = await fetch("/api/customer-segmentation"); // Replace with real API
-        if (!response.ok) throw new Error("Network response was not ok");
-        const data = await response.json();
-        setSegmentationData(data);
-      } catch (err) {
-        console.error("Error fetching segmentation data:", err);
+        const { data } = await axiosInstance.get("/customer-segmentation/");
+        setSegmentationData(Array.isArray(data) ? data : []);
+        setError(false);
+      } catch (error) {
+        console.error("Error fetching segmentation data:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        setSegmentationData([]);
         setError(true);
+        toast.error(error.response?.data?.message || "Failed to load customer segmentation data.");
       } finally {
         setLoading(false);
       }
@@ -56,7 +64,7 @@ const CustomerSegmentation = () => {
             persists, check back later.
           </p>
         </div>
-      ) : (
+      ) : segmentationData.length > 0 ? (
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer>
             <RadarChart
@@ -92,6 +100,10 @@ const CustomerSegmentation = () => {
               />
             </RadarChart>
           </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="text-center text-gray-400 font-medium h-72 flex flex-col justify-center items-center">
+          <p>No customer segmentation data available.</p>
         </div>
       )}
     </motion.div>

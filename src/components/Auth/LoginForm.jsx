@@ -1,76 +1,72 @@
 import { useState, useEffect } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import Cookies from "js-cookie";
+import { axiosInstance } from "../../axios-instance/axios-instance";
 
 const LoginForm = ({ onSwitch, onLogin }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [error, setError] = useState("");
 
-  // Load saved credentials from localStorage if available
   useEffect(() => {
-    const savedEmail = localStorage.getItem("savedEmail");
-    const savedPassword = localStorage.getItem("savedPassword");
-
-    if (savedEmail && savedPassword) {
+    const savedEmail = Cookies.get("savedEmail");
+    if (savedEmail) {
       setEmail(savedEmail);
-      setPassword(savedPassword);
-      setRememberMe(true); // Automatically check "Remember Me" if credentials are stored
+      setRememberMe(true);
     }
   }, []);
 
-  // Password strength checker function
-  const checkPasswordStrength = (password) => {
-    const lengthCriteria = password.length >= 8;
-    const numberCriteria = /\d/.test(password);
-    const uppercaseCriteria = /[A-Z]/.test(password);
-    const specialCharCriteria = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-    let strength = 0;
-    if (lengthCriteria) strength += 1;
-    if (numberCriteria) strength += 1;
-    if (uppercaseCriteria) strength += 1;
-    if (specialCharCriteria) strength += 1;
-
-    setPasswordStrength(strength);
-  };
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
 
-    if (email && password) {
-      const loggedInUser = {
-        email,
-        name: "Demo User",
-      };
+    if (!email || !password) {
+      setError("Please input your email and password");
+      return;
+    }
 
-      // Save credentials to localStorage if "Remember Me" is checked
+    const reqBody = {
+      email,
+      password,
+    };
+
+    try {
+      const { data } = await axiosInstance.post("/auth/login", reqBody);
+      const { user, access } = data;
+      Cookies.set("jwt-token", access, { expires: 7 });
+
       if (rememberMe) {
-        localStorage.setItem("savedEmail", email);
-        localStorage.setItem("savedPassword", password);
+        Cookies.set("savedEmail", email, { expires: 7 });
       } else {
-        // Remove saved credentials if "Remember Me" is unchecked
-        localStorage.removeItem("savedEmail");
-        localStorage.removeItem("savedPassword");
+        Cookies.remove("savedEmail");
       }
 
-      onLogin(loggedInUser); // This sets the user and redirects in App.jsx
+      onLogin(user, access);
+    } catch (e) {
+      setError(
+        e.response?.data?.message || "Login failed. Please check your credentials."
+      );
     }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center">Welcome Back 💃🏻</h2>
+    <div className="w-full max-w-md mx-auto bg-white p-8 rounded-lg shadow-md text-gray-700">
+      <h2 className="text-2xl font-bold mb-6 text-center">Welcome Back 💃</h2>
+      {error && (
+        <div className="text-red-500 text-sm mb-4 text-center">{error}</div>
+      )}
       <form onSubmit={handleLogin} className="space-y-4">
         <div>
           <label className="block mb-1 text-sm font-medium">Email</label>
           <input
-            type="email"
+            type="text"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-rose-400"
+            placeholder="Enter your email"
           />
         </div>
         <div>
@@ -80,45 +76,16 @@ const LoginForm = ({ onSwitch, onLogin }) => {
               type={passwordVisible ? "text" : "password"}
               required
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                checkPasswordStrength(e.target.value);
-              }}
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-rose-400"
+              placeholder="Enter your password"
             />
             <span
               onClick={() => setPasswordVisible(!passwordVisible)}
-              className="absolute right-3 top-3 cursor-pointer text-gray-500"
+              className="absolute right-3 top-3 cursor-pointer text-gray-600"
             >
               {passwordVisible ? <FaEyeSlash /> : <FaEye />}
             </span>
-          </div>
-          {/* Password Strength Bar */}
-          <div className="mt-2">
-            <div
-              className={`h-2 rounded-full ${
-                passwordStrength === 0
-                  ? "bg-gray-300"
-                  : passwordStrength === 1
-                  ? "bg-red-500"
-                  : passwordStrength === 2
-                  ? "bg-yellow-500"
-                  : passwordStrength === 3
-                  ? "bg-green-500"
-                  : "bg-blue-500"
-              }`}
-            ></div>
-            <div className="text-sm mt-1 text-gray-600">
-              {passwordStrength === 0
-                ? "Weak"
-                : passwordStrength === 1
-                ? "Weak"
-                : passwordStrength === 2
-                ? "Medium"
-                : passwordStrength === 3
-                ? "Strong"
-                : "Very Strong"}
-            </div>
           </div>
         </div>
         <div className="flex items-center space-x-2 mt-4">
@@ -126,23 +93,23 @@ const LoginForm = ({ onSwitch, onLogin }) => {
             type="checkbox"
             checked={rememberMe}
             onChange={() => setRememberMe(!rememberMe)}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+            className="h-4 w-4 text-blue-rose-400 focus:ring-blue-rose-400 border-gray-300 rounded"
           />
-          <label className="text-sm">Remember Me</label>
+          <label className="text-sm text-gray-600">Remember Me</label>
         </div>
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 mt-4"
+          className="w-full bg-blue-500 hover:bg-blue-rose-500 text-white font-bold py-2 px-4 rounded-md transition duration-200"
         >
-          Login
+          Log In
         </button>
       </form>
-      <div className="text-sm mt-4 text-center">
+      <div className="text-sm mt-4 text-center text-gray-600">
         <p>
           Forgot your password?{" "}
           <button
             onClick={() => onSwitch("forgot")}
-            className="text-blue-600 underline"
+            className="text-blue-500 hover:underline"
           >
             Reset here
           </button>
@@ -151,7 +118,7 @@ const LoginForm = ({ onSwitch, onLogin }) => {
           Don't have an account?{" "}
           <button
             onClick={() => onSwitch("signup")}
-            className="text-blue-600 underline"
+            className="text-blue-500 hover:underline"
           >
             Sign up
           </button>

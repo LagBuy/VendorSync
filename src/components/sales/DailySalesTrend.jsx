@@ -9,6 +9,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { toast } from "react-toastify";
+import { axiosInstance } from "../../axios-instance/axios-instance";
 
 // Fancy Spinner component
 const Spinner = () => (
@@ -20,29 +22,22 @@ const Spinner = () => (
 const DailySalesTrend = () => {
   const [dailySalesData, setDailySalesData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
   // Fetch sales data dynamically
   useEffect(() => {
     const fetchDailySalesData = async () => {
+      setLoading(true);
       try {
-        const response = await fetch("/api/daily-sales"); // Replace with your actual API endpoint
-        if (!response.ok) throw new Error("Failed to fetch sales data");
-        const data = await response.json();
-
-        // Set the fetched data
+        const { data } = await axiosInstance.get("/daily-sales");
         setDailySalesData(data);
-      } catch (err) {
-        console.error("Error fetching sales data:", err);
-        setToast({
-          show: true,
-          message: "Failed to load sales data.",
-          type: "error",
+        toast.success("Daily sales data loaded successfully ✅");
+      } catch (error) {
+        console.error("Error fetching sales data:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
         });
-        setTimeout(
-          () => setToast({ show: false, message: "", type: "" }),
-          5000
-        );
+        toast.error(error.response?.data?.message || "Failed to load daily sales data.");
       } finally {
         setLoading(false);
       }
@@ -70,23 +65,14 @@ const DailySalesTrend = () => {
         Daily Sales Trend
       </h2>
 
-      {/* Toast Notification */}
-      {toast.show && (
-        <div
-          className={`absolute top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-md shadow-lg z-50 ${
-            toast.type === "error"
-              ? "bg-red-600 text-white"
-              : "bg-green-600 text-white"
-          } animate-fade`}
-        >
-          <span>{toast.message}</span>
-        </div>
-      )}
-
       {/* Loading State with Spinner */}
       {loading ? (
         <div className="flex justify-center py-10 text-white">
           <Spinner />
+        </div>
+      ) : dailySalesData.length === 0 ? (
+        <div className="flex justify-center items-center h-[300px] text-gray-400">
+          No daily sales data available.
         </div>
       ) : (
         <div style={{ width: "100%", height: 300 }}>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import TermsAndConditions from "./TermsAndConditions";
 import { FaRegHandshake } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
@@ -7,16 +7,24 @@ import "react-toastify/dist/ReactToastify.css";
 const TermsModalTrigger = () => {
   const [showTerms, setShowTerms] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const hasSubmitted = useRef(false); // Ref to prevent multiple toast calls
 
   const handleSubmit = () => {
+    if (hasSubmitted.current) return; // Prevent double trigger
+
     toast.success("✅ Terms accepted and submitted!", {
       position: "top-center",
       autoClose: 3000,
     });
 
+    hasSubmitted.current = true;
+
     // Auto-close dropdown and reset checkbox
-    setShowTerms(false);
-    setAgreed(false);
+    setTimeout(() => {
+      setShowTerms(false);
+      setAgreed(false);
+      hasSubmitted.current = false; // Reset for next interaction
+    }, 100); // Small delay for UI update
   };
 
   return (
@@ -28,7 +36,7 @@ const TermsModalTrigger = () => {
         T&apos;s And C&apos;s
       </h2>
       <p className="my-3">
-        kindly go through our term's and conditions and get clarity.
+        kindly go through our term&apos;s and conditions and get clarity.
       </p>
       <div className="text-left">
         <button

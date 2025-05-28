@@ -8,6 +8,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { toast } from "react-toastify";
+import { axiosInstance } from "../../axios-instance/axios-instance";
 
 // Define your custom color palette
 const COLORS = [
@@ -21,16 +23,24 @@ const COLORS = [
 
 const ChannelPerformance = () => {
   const [channelData, setChannelData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch live data from your API endpoint
     const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const response = await fetch("/api/channel-performance");
-        const data = await response.json();
-        setChannelData(data);
+        const { data } = await axiosInstance.get("/channel-performance/");
+        setChannelData(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error("Error fetching channel performance data:", error);
+        console.error("Error fetching channel performance data:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        setChannelData([]);
+        toast.error(error.response?.data?.message || "Failed to load channel performance data.");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -47,38 +57,48 @@ const ChannelPerformance = () => {
       <h2 className="text-xl font-semibold text-gray-100 mb-4">
         Channel Performance
       </h2>
-      <div style={{ width: "100%", height: 300 }}>
-        <ResponsiveContainer>
-          <PieChart>
-            <Pie
-              data={channelData}
-              cx="50%"
-              cy="50%"
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="value"
-              label={({ name, percent }) =>
-                `${name} ${(percent * 100).toFixed(0)}%`
-              }
-            >
-              {channelData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={COLORS[index % COLORS.length]}
-                />
-              ))}
-            </Pie>
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "rgba(31, 41, 55, 0.8)",
-                borderColor: "#4B5563",
-              }}
-              itemStyle={{ color: "#E5E7EB" }}
-            />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-[300px] text-gray-400">
+          Loading...
+        </div>
+      ) : channelData.length > 0 ? (
+        <div style={{ width: "100%", height: 300 }}>
+          <ResponsiveContainer>
+            <PieChart>
+              <Pie
+                data={channelData}
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+                label={({ name, percent }) =>
+                  `${name} ${(percent * 100).toFixed(0)}%`
+                }
+              >
+                {channelData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "rgba(31, 41, 55, 0.8)",
+                  borderColor: "#4B5563",
+                }}
+                itemStyle={{ color: "#E5E7EB" }}
+              />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="flex justify-center items-center h-[300px] text-gray-400">
+          No channel performance data available.
+        </div>
+      )}
     </motion.div>
   );
 };

@@ -1,0 +1,44 @@
+import axios from "axios";
+import Cookies from "js-cookie";
+
+// Debug environment variable
+console.log("VITE_BASE_URL:", import.meta.env.VITE_BASE_URL);
+
+// Ensure baseURL has no trailing slash
+const baseURL = (import.meta.env.VITE_BASE_URL || "https://api.lagbuy.com/api/v1").replace(/\/+$/, "");
+
+const axiosInstance = axios.create({
+  baseURL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  withCredentials: true, // Include cookies in requests
+});
+
+// Request interceptor to set Authorization header
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const jwt = Cookies.get("jwt-token");
+    if (jwt) {
+      config.headers.Authorization = `Bearer ${jwt}`;
+    } else {
+      delete config.headers.Authorization;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor for 401 errors
+axiosInstance.interceptors.response.use(
+  (res) => res,
+  async (err) => {
+    if (err.response?.status === 401) {
+      Cookies.remove("jwt-token");
+      window.location.replace("/auth");
+    }
+    return Promise.reject(err);
+  }
+);
+
+export { axiosInstance };

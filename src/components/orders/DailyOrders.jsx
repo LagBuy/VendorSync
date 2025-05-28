@@ -10,16 +10,19 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import axios from "axios";
+import { toast } from "react-toastify";
+import { axiosInstance } from "../../axios-instance/axios-instance";
 
 const DailyOrders = () => {
   const [dailyOrdersData, setDailyOrdersData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchDailyOrders = async () => {
+      setIsLoading(true);
       try {
-        const response = await axios.get("http://35.88.242.25/api/orders/");
-        const orders = response.data;
+        const { data } = await axiosInstance.get("/orders/");
+        const orders = data;
 
         const ordersByTimestamp = {};
 
@@ -46,7 +49,7 @@ const DailyOrders = () => {
           })
         );
 
-        // Optional: Sort by real date and time
+        // Sort by real date and time
         chartData.sort((a, b) => {
           const [dateA, timeA] = a.date.split(", ");
           const [dayA, monthA, yearA] = dateA.split("/").map(Number);
@@ -61,7 +64,14 @@ const DailyOrders = () => {
 
         setDailyOrdersData(chartData);
       } catch (error) {
-        console.error("Error fetching daily orders:", error);
+        console.error("Error fetching daily orders:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        toast.error(error.response?.data?.message || "Failed to load daily orders.");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -77,36 +87,46 @@ const DailyOrders = () => {
     >
       <h2 className="text-xl font-semibold text-gray-100 mb-4">Daily Orders</h2>
 
-      <div style={{ width: "100%", height: 300 }}>
-        <ResponsiveContainer>
-          <LineChart data={dailyOrdersData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis
-              dataKey="date"
-              stroke="#9CA3AF"
-              interval={0}
-              angle={-45}
-              textAnchor="end"
-              height={80}
-            />
-            <YAxis stroke="#9CA3AF" />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "rgba(31, 41, 55, 0.8)",
-                borderColor: "#4B5563",
-              }}
-              itemStyle={{ color: "#E5E7EB" }}
-            />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="orders"
-              stroke="#8B5CF6"
-              strokeWidth={2}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-[300px] text-gray-400">
+          Loading...
+        </div>
+      ) : dailyOrdersData.length > 0 ? (
+        <div style={{ width: "100%", height: 300 }}>
+          <ResponsiveContainer>
+            <LineChart data={dailyOrdersData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis
+                dataKey="date"
+                stroke="#9CA3AF"
+                interval={0}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+              />
+              <YAxis stroke="#9CA3AF" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "rgba(31, 41, 55, 0.8)",
+                  borderColor: "#4B5563",
+                }}
+                itemStyle={{ color: "#E5E7EB" }}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="orders"
+                stroke="#8B5CF6"
+                strokeWidth={2}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="flex justify-center items-center h-[300px] text-gray-400">
+          No order data available.
+        </div>
+      )}
     </motion.div>
   );
 };

@@ -8,7 +8,8 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import axios from "axios";
+import { toast } from "react-toastify";
+import { axiosInstance } from "../../axios-instance/axios-instance";
 
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE"];
 
@@ -22,13 +23,14 @@ const getAgeBracket = (age) => {
 
 const UserDemographicsChart = () => {
   const [ageData, setAgeData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchUsers = async () => {
+      setIsLoading(true);
       try {
-        const res = await axios.get("/api/customers");
-        const customers = res.data;
-
+        const { data: customers } = await axiosInstance.get("/customers/");
+        
         const ageBracketMap = {
           "18-24": 0,
           "25-34": 0,
@@ -53,7 +55,15 @@ const UserDemographicsChart = () => {
         );
         setAgeData(formattedData);
       } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error("Error fetching users:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        setAgeData([]);
+        toast.error(error.response?.data?.message || "Failed to load customer demographics data.");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -70,43 +80,53 @@ const UserDemographicsChart = () => {
       <h2 className="text-xl font-semibold text-gray-100 mb-4">
         Customers' Demographics
       </h2>
-      <p>
+      <p className="text-gray-300 mb-4">
         This shows the kind of customers & what they want/need. It will help you
         in making better decisions in your product or services, so as to satisfy
         them.
       </p>
-      <div style={{ width: "100%", height: 300 }}>
-        <ResponsiveContainer>
-          <PieChart>
-            <Pie
-              data={ageData}
-              cx="50%"
-              cy="50%"
-              outerRadius={100}
-              fill="#8884d8"
-              dataKey="value"
-              label={({ name, percent }) =>
-                `${name} ${(percent * 100).toFixed(0)}%`
-              }
-            >
-              {ageData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={COLORS[index % COLORS.length]}
-                />
-              ))}
-            </Pie>
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "rgba(31, 41, 55, 0.8)",
-                borderColor: "#4B5563",
-              }}
-              itemStyle={{ color: "#E5E7EB" }}
-            />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-[300px] text-gray-400">
+          Loading...
+        </div>
+      ) : ageData.length > 0 && ageData.some((d) => d.value > 0) ? (
+        <div style={{ width: "100%", height: 300 }}>
+          <ResponsiveContainer>
+            <PieChart>
+              <Pie
+                data={ageData}
+                cx="50%"
+                cy="50%"
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+                label={({ name, percent }) =>
+                  `${name} ${(percent * 100).toFixed(0)}%`
+                }
+              >
+                {ageData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "rgba(31, 41, 55, 0.8)",
+                  borderColor: "#4B5563",
+                }}
+                itemStyle={{ color: "#E5E7EB" }}
+              />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="flex justify-center items-center h-[300px] text-gray-400">
+          No customer demographics data available.
+        </div>
+      )}
     </motion.div>
   );
 };

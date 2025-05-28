@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
+import { axiosInstance } from "../../axios-instance/axios-instance";
 
 const getPasswordStrength = (password) => {
   if (
@@ -19,6 +20,7 @@ const ChangePassword = () => {
   const [current, setCurrent] = useState("");
   const [newPass, setNewPass] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const strength = getPasswordStrength(newPass);
   const strengthColor = {
@@ -27,29 +29,46 @@ const ChangePassword = () => {
     Strong: "text-green-500",
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Check if fields are empty
+    // Client-side validation
     if (!current || !newPass || !confirm) {
       toast.error("Please fill all fields.");
       return;
     }
 
-    // Check if passwords match
     if (newPass !== confirm) {
       toast.error("Passwords do not match.");
       return;
     }
 
-    // Check password strength
     if (strength === "Weak") {
       toast.error("Choose a stronger password.");
       return;
     }
 
-    toast.success("Password changed successfully!");
-    // Add real save logic here
+    setLoading(true);
+    try {
+      await axiosInstance.patch("/change-password", {
+        current_password: current,
+        new_password: newPass,
+      });
+      toast.success("Password changed successfully!");
+      // Reset form
+      setCurrent("");
+      setNewPass("");
+      setConfirm("");
+    } catch (error) {
+      console.error("Error changing password:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+      toast.error(error.response?.data?.message || "Failed to change password.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -60,6 +79,7 @@ const ChangePassword = () => {
         value={current}
         onChange={(e) => setCurrent(e.target.value)}
         className="bg-gray-700 text-white px-3 py-2 rounded"
+        disabled={loading}
       />
       <input
         type="password"
@@ -67,6 +87,7 @@ const ChangePassword = () => {
         value={newPass}
         onChange={(e) => setNewPass(e.target.value)}
         className="bg-gray-700 text-white px-3 py-2 rounded"
+        disabled={loading}
       />
       {newPass && (
         <p className={`text-sm font-medium ${strengthColor[strength]}`}>
@@ -79,12 +100,14 @@ const ChangePassword = () => {
         value={confirm}
         onChange={(e) => setConfirm(e.target.value)}
         className="bg-gray-700 text-white px-3 py-2 rounded"
+        disabled={loading}
       />
       <button
         type="submit"
         className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+        disabled={loading}
       >
-        Save Changes
+        {loading ? "Saving..." : "Save Changes"}
       </button>
     </form>
   );
