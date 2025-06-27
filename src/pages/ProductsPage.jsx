@@ -26,7 +26,7 @@ const ProductsPage = () => {
     const fetchData = async () => {
       try {
         const [productsRes, rateRes] = await Promise.all([
-          axios.get("http://35.88.242.25/api/products/"),
+          axios.get("/products/"),
           axios.get(
             "https://api.exchangerate.host/latest?base=USD&symbols=NGN"
           ),

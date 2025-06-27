@@ -41,13 +41,13 @@ const ForgotPasswordForm = ({ onSwitch }) => {
       )}
       <form onSubmit={handleReset} className="space-y-4">
         <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">Email Address</label>
+          <label className="block mb-1 text-sm font-medium text-gray-900">Email Address</label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-rose-400"
+            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-rose-400 bg-white text-gray-900 placeholder-gray-500"
             placeholder="example@email.com"
             disabled={isLoading}
           />

@@ -18,7 +18,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const { data } = await axiosInstance.get("/products/categories/");
+        const { data } = await axiosInstance.post("/products/categories/");
         setCategories(data);
       } catch (error) {
         console.error("Fetch categories error:", {

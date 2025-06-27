@@ -18,7 +18,7 @@ const CategoryDistributionChart = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axiosInstance.get("/products");
+      const response = await axiosInstance.get("/products/");
       setProducts(response.data);
     } catch (error) {
       console.error("Error fetching products:", error);

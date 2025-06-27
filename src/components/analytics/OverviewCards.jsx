@@ -111,15 +111,15 @@ const OverviewCards = () => {
       {overviewData.map((item, index) => (
         <motion.div
           key={item.name}
-          className="bg-gray-800 bg-opacity-50 backdrop-filter backdrop-blur-lg shadow-lg rounded-xl p-6 border border-gray-700"
+          className="bg-[#1A362B] bg-opacity-50 backdrop-filter backdrop-blur-lg shadow-lg rounded-xl p-6 border border-gray-700"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.1 }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-medium text-gray-400">{item.name}</h3>
-              <p className="mt-1 text-xl font-semibold text-gray-100">
+              <h3 className="text-sm font-medium text-[#FFF9B0]">{item.name}</h3>
+              <p className="mt-1 text-xl font-semibold text-[#FFF9B0]">
                 {isLoading ? (
                   <span className="animate-pulse">Loading...</span>
                 ) : error ? (
@@ -132,12 +132,12 @@ const OverviewCards = () => {
 
             <div
               className={`p-3 rounded-full bg-opacity-20 ${
-                item.change >= 0 ? "bg-green-500" : "bg-red-500"
+                item.change >= 0 ? "bg-[#2E7D32]" : "bg-[#D32F2F]"
               }`}
             >
               <item.icon
                 className={`size-6 ${
-                  item.change >= 0 ? "text-green-500" : "text-red-500"
+                  item.change >= 0 ? "text-[#2E7D32]" : "text-[#D32F2F]"
                 }`}
               />
             </div>
@@ -145,11 +145,11 @@ const OverviewCards = () => {
 
           <div
             className={`mt-4 flex items-center ${
-              item.change >= 0 ? "text-green-500" : "text-red-500"
+              item.change >= 0 ? "text-[#2E7D32]" : "text-[#D32F2F]"
             }`}
           >
             {isLoading || error ? (
-              <span className="text-sm text-gray-400">N/A</span>
+              <span className="text-sm text-[#FFF9B0]">N/A</span>
             ) : (
               <>
                 {item.change >= 0 ? (
@@ -160,7 +160,7 @@ const OverviewCards = () => {
                 <span className="ml-1 text-sm font-medium">
                   {Math.abs(item.change)}%
                 </span>
-                <span className="ml-2 text-sm text-gray-400">vs last period</span>
+                <span className="ml-2 text-sm text-[#FFF9B0]">vs last period</span>
               </>
             )}
           </div>

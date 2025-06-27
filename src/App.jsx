@@ -1,6 +1,6 @@
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Cookies from "js-cookie";
 import OverViewPage from "./pages/OverviewPage";
@@ -14,31 +14,23 @@ import Sidebar from "./components/common/Sidebar";
 import AuthPage from "./pages/AuthPage";
 import PaymentHistory from "./pages/PaymentHistory";
 import ChangePasswordForm from "./components/Auth/ChangePasswordForm";
-; // this is coming directly from components. I forgot to call it in my sub-parent route which is the AuthPage.jsx
-import { axiosInstance } from "./axios-instance/axios-instance";
 
 function App() {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const validateUser = async () => {
+    const validateUser = () => {
       const jwt = Cookies.get("jwt-token");
+      console.log("Checking JWT token:", !!jwt);
 
       if (jwt) {
-        try {
-          // this particular lines of code are optional. You can remove it sha. But it helps to test if this code will work during testing if and only if there's /auth/me endpoint.
-          const { data } = await axiosInstance.get("/auth/me");
-          setUser(data.user);
-        } catch (e) {
-          console.log(e)
-          toast.error("Session expired. Please log in again.");
-          Cookies.remove("jwt-token");
-          setUser(null);
-          navigate("/auth", { replace: true });
-        }
+        // Assume user is authenticated if token exists
+        setUser({ isAuthenticated: true });
       } else {
+        setUser(null);
         if (window.location.pathname !== "/reset-password") {
+          console.log("No JWT, redirecting to /auth");
           navigate("/auth", { replace: true });
         }
       }
@@ -48,13 +40,14 @@ function App() {
   }, [navigate]);
 
   const handleLogin = (loggedInUser, jwt) => {
+    console.log("Logging in user:", loggedInUser);
     setUser(loggedInUser);
     Cookies.set("jwt-token", jwt, { expires: 1 }); // 1-day expiry
     navigate("/", { replace: true });
   };
 
   return (
-    <div className="flex h-screen bg-gray-900 text-gray-100 overflow-hidden">
+    <div className="flex h-screen bg-gray-800 text-gray-100 overflow-hidden">
       {user && <Sidebar onLogin={handleLogin} />}
       <div className="flex-1 overflow-y-auto">
         <Routes>
@@ -78,7 +71,19 @@ function App() {
           )}
         </Routes>
       </div>
-      <ToastContainer />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+        closeButton={true}
+      />
     </div>
   );
 }

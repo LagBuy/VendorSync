@@ -10,21 +10,38 @@ import ConfirmSignOut from "./ConfirmSignOut";
 
 const SignOutNow = ({ onLogin }) => {
   const [signOutModalOpen, setSignOutModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
+    setIsLoading(true);
     try {
-      await axiosInstance.post("/auth/logout");
-      Cookies.remove("jwt-token");
+      // Call the logout endpoint (base URL from VITE_BASE_URL is prepended by axiosInstance)
+      await axiosInstance.post("/auth/logout/");
+
+      // Clear the JWT token from cookies
+      Cookies.remove("jwt-token", { path: "/" });
+
+      // Reset login state
       onLogin(null, null);
+
+      // Navigate to the auth page
       navigate("/auth");
+
+      // Show success message
       toast.success("You don sharply logout!");
     } catch (e) {
-      toast.error(e.response?.data?.message || "Omoo, logout failed. Please try again.");
-      Cookies.remove("jwt-token");
+      // Handle error gracefully
+      toast.error(
+        e.response?.data?.message || "Logout failed. Please try again."
+      );
+
+      // Perform client-side cleanup even if API call fails
+      Cookies.remove("jwt-token", { path: "/" });
       onLogin(null, null);
       navigate("/auth");
     } finally {
+      setIsLoading(false);
       setSignOutModalOpen(false);
     }
   };
@@ -44,10 +61,11 @@ const SignOutNow = ({ onLogin }) => {
         This will log you out of your account. You can log in again anytime.
       </p>
       <button
-        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={() => setSignOutModalOpen(true)}
+        disabled={isLoading}
       >
-        Logout
+        {isLoading ? "Logging out..." : "Logout"}
       </button>
 
       <Modal

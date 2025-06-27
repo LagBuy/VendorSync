@@ -9,11 +9,13 @@ const ConfirmSignOut = ({ onConfirm, onCancel }) => {
   const handleSignOut = async () => {
     setLoading(true);
     try {
-      await axiosInstance.post("/logout");
+      await axiosInstance.post("auth/logout/");
       Cookies.remove("jwt-token"); // Clear JWT cookie
       toast.success("Logged out successfully!");
+
       // Redirect to auth page
       window.location.replace("/auth");
+
       onConfirm(); // Call onConfirm to close dialog or handle parent logic
     } catch (error) {
       console.error("Error signing out:", {
