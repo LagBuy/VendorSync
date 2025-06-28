@@ -41,7 +41,7 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // Updates products with PATCH /api/v1/products/{id}/.
+      // Updates products with PATCH /products/{id}/
       const { data } = await axiosInstance.patch(`/products/${product.id}/`, {
         name: formData.name,
         category: formData.category,

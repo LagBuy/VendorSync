@@ -21,7 +21,13 @@ const OrdersPage = () => {
       setIsLoading(true);
       try {
         const { data } = await axiosInstance.get("/orders/");
-        const orders = data;
+        let orders = [];
+        if (Array.isArray(data)) {
+          orders = data;
+        } else {
+          console.error("Unexpected order data format:", data);
+          toast.error("Unexpected data format from server. Please try again.");
+        }
 
         setTotalOrders(orders.length);
 
@@ -34,7 +40,7 @@ const OrdersPage = () => {
         setCompletedOrders(completed.length);
 
         const revenue = orders.reduce(
-          (sum, order) => sum + order.totalAmount,
+          (sum, order) => sum + (order.totalAmount || 0),
           0
         );
         setTotalRevenue(revenue);

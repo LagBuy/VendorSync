@@ -22,7 +22,7 @@ const ProductsTable = () => {
       setIsLoading(true);
       try {
         const { data } = await axiosInstance.get("/products/");
-        setProducts(data);
+        setProducts(data || []); // Ensure products is always an array
       } catch (error) {
         console.error("Fetch products error:", {
           status: error.response?.status,
@@ -30,6 +30,7 @@ const ProductsTable = () => {
           message: error.message,
         });
         toast.error(error.response?.data?.message || "Failed to load products.");
+        setProducts([]); // Set to empty array on error
       } finally {
         setIsLoading(false);
       }
@@ -39,11 +40,13 @@ const ProductsTable = () => {
   }, []);
 
   useEffect(() => {
-    const filtered = products.filter(
-      (product) =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filtered = Array.isArray(products)
+      ? products.filter(
+          (product) =>
+            product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            product.category.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : [];
     setFilteredProducts(filtered);
   }, [searchTerm, products]);
 

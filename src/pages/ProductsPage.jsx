@@ -6,19 +6,16 @@ import { AlertTriangle, Package, TrendingUp, DollarSign } from "lucide-react";
 import CategoryDistributionChart from "../components/overview/CategoryDistributionChart";
 import SalesTrendChart from "../components/products/SalesTrendChart";
 import ProductsTable from "../components/products/ProductsTable";
+import { axiosInstance } from "../axios-instance/axios-instance";
 import axios from "axios";
 
 const ProductsPage = () => {
   const [products, setProducts] = useState([]); // Stores the list of products
-
   const [totalProducts, setTotalProducts] = useState(0); // Stores the total count of products
-
   const [topSelling, setTopSelling] = useState([]);
   const [lowStock, setLowStock] = useState([]);
-
   const [exchangeRate, setExchangeRate] = useState(null);
   const [exchangeRateDate, setExchangeRateDate] = useState(null);
-
   const [showTopToast, setShowTopToast] = useState(false);
   const [showLowToast, setShowLowToast] = useState(false);
 
@@ -26,7 +23,7 @@ const ProductsPage = () => {
     const fetchData = async () => {
       try {
         const [productsRes, rateRes] = await Promise.all([
-          axios.get("/products/"),
+          axiosInstance.get("/products/"),
           axios.get(
             "https://api.exchangerate.host/latest?base=USD&symbols=NGN"
           ),
@@ -183,7 +180,7 @@ const ProductsPage = () => {
         <ProductsTable setTotalProducts={setTotalProducts} />
 
         {/*  */}
-        <div className="grid grid-col-1 lg:grid-cols-2 gap-8 py-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-20">
           <SalesTrendChart />
           <CategoryDistributionChart />
         </div>

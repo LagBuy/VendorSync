@@ -14,7 +14,14 @@ const OrdersTable = () => {
       setIsLoading(true);
       try {
         const { data } = await axiosInstance.get("/orders/");
-        setOrders(data);
+        let fetchedOrders = [];
+        if (Array.isArray(data)) {
+          fetchedOrders = data;
+        } else {
+          console.error("Unexpected order data format:", data);
+          toast.error("Unexpected data format from server. Please try again.");
+        }
+        setOrders(fetchedOrders);
       } catch (error) {
         console.error("Error fetching orders:", {
           status: error.response?.status,
@@ -64,7 +71,7 @@ const OrdersTable = () => {
         otp: userOtp,
       });
 
-      //  THERE IS NO DELETE ORDER BECAUSE A VENDOR SHOULD NOT DELETE AN ORDER
+      // Update local state
       setOrders((prev) =>
         prev.map((order) =>
           order.id === id ? { ...order, status: "Delivered" } : order

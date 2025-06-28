@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import Cookies from "js-cookie";
 import { axiosInstance } from "../../axios-instance/axios-instance";
 
-const SignupForm = ({ onSwitch, onLogin, email: initialEmail = "" }) => {
+const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
   const [step, setStep] = useState(initialEmail ? 3 : 1);
   const [email, setEmail] = useState(initialEmail);
   const [firstName, setFirstName] = useState("");
@@ -21,6 +20,7 @@ const SignupForm = ({ onSwitch, onLogin, email: initialEmail = "" }) => {
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const SIGNUP_ENDPOINT = "/auth/signup/";
 
@@ -39,22 +39,24 @@ const SignupForm = ({ onSwitch, onLogin, email: initialEmail = "" }) => {
     setError("");
     setIsLoading(true);
 
-    const namePattern = /^[A-Za-z]+$/;
+    const trimmedFirstName = firstName.trim();
+    const trimmedLastName = lastName.trim();
+    const namePattern = /^[A-Za-z\s]+$/; // Allow spaces for multi-word names
     if (
-      !firstName ||
-      !lastName ||
-      !namePattern.test(firstName) ||
-      !namePattern.test(lastName)
+      !trimmedFirstName ||
+      !trimmedLastName ||
+      !namePattern.test(trimmedFirstName) ||
+      !namePattern.test(trimmedLastName)
     ) {
-      setError("First and Last names must contain only letters.");
+      setError("First and Last names must contain only letters and spaces.");
       setIsLoading(false);
       return;
     }
     if (
-      firstName[0] !== firstName[0].toUpperCase() ||
-      lastName[0] !== lastName[0].toUpperCase()
+      !/[A-Za-z]/.test(trimmedFirstName[0]) ||
+      !/[A-Za-z]/.test(trimmedLastName[0])
     ) {
-      setError("Names must start with a capital letter.");
+      setError("Names must start with a letter.");
       setIsLoading(false);
       return;
     }
@@ -92,8 +94,8 @@ const SignupForm = ({ onSwitch, onLogin, email: initialEmail = "" }) => {
     try {
       const reqBody = {
         email,
-        first_name: firstName,
-        last_name: lastName,
+        first_name: trimmedFirstName,
+        last_name: trimmedLastName,
         gender,
         address,
         dob,
@@ -104,10 +106,9 @@ const SignupForm = ({ onSwitch, onLogin, email: initialEmail = "" }) => {
       };
       const response = await axiosInstance.post(SIGNUP_ENDPOINT, reqBody);
       console.log("Signup Response:", response.data);
-      const { user, access } = response.data;
-      Cookies.set("jwt-token", access, { expires: 1 });
-      onLogin(user, access);
-      onSwitch("login"); // Switch to login form after successful signup
+      setStep(1); // Reset step to initial state
+      setShowModal(true); // Show the congratulatory modal
+      console.log("Switching to login form, current step:", step);
     } catch (e) {
       console.error("Signup Error:", e.response?.data, e.message);
       setError(e.response?.data?.message || "Signup failed. Please try again.");
@@ -120,6 +121,11 @@ const SignupForm = ({ onSwitch, onLogin, email: initialEmail = "" }) => {
     e.preventDefault();
     if (step > 3) setStep(step - 1);
     else if (step === 3) setStep(1);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    onSwitch("login"); // Switch to login form after closing modal
   };
 
   return (
@@ -226,27 +232,23 @@ const SignupForm = ({ onSwitch, onLogin, email: initialEmail = "" }) => {
             type="button"
             onClick={() => {
               setError("");
-              const namePattern = /^[A-Za-z]+$/;
+              const trimmedFirstName = firstName.trim();
+              const trimmedLastName = lastName.trim();
+              const namePattern = /^[A-Za-z\s]+$/; // Allow spaces for multi-word names
               if (
-                !firstName ||
-                !lastName ||
-                !namePattern.test(firstName) ||
-                !namePattern.test(lastName)
+                !trimmedFirstName ||
+                !trimmedLastName ||
+                !namePattern.test(trimmedFirstName) ||
+                !namePattern.test(trimmedLastName)
               ) {
-                setError("First and Last names must contain only letters.");
+                setError("First and Last names must contain only letters and spaces.");
                 return;
               }
               if (
-                firstName[0] !== firstName[0].toUpperCase() ||
-                lastName[0] !== lastName[0].toUpperCase()
+                !/[A-Za-z]/.test(trimmedFirstName[0]) ||
+                !/[A-Za-z]/.test(trimmedLastName[0])
               ) {
-                setError("Names must start with a capital letter.");
-                return;
-              }
-              const dobPattern =
-                /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
-              if (!dob || !dobPattern.test(dob)) {
-                setError("Date of Birth must be in dd/mm/yyyy format.");
+                setError("Names must start with a letter.");
                 return;
               }
               setStep(4);
@@ -388,6 +390,25 @@ const SignupForm = ({ onSwitch, onLogin, email: initialEmail = "" }) => {
             </p>
           </div>
         </form>
+      )}
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h3 className="text-xl font-bold text-center mb-4">Congratulations!</h3>
+            <p className="text-center mb-4">
+              Congratulations for joining LagBuy, a platform for a seamless business transaction and shopping experience.
+            </p>
+            <div className="text-center">
+              <button
+                onClick={handleCloseModal}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
