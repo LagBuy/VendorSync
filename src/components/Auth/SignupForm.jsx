@@ -104,7 +104,9 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
         business_type: businessType === "Other" ? customBusinessType : businessType,
         depends_on_dollar_rate: dependsOnDollarRate === "Yes",
       };
+
       const response = await axiosInstance.post(SIGNUP_ENDPOINT, reqBody);
+      
       console.log("Signup Response:", response.data);
       setStep(1); // Reset step to initial state
       setShowModal(true); // Show the congratulatory modal
