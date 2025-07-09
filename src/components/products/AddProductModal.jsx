@@ -2,33 +2,47 @@ import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { axiosInstance } from "../../axios-instance/axios-instance";
 
+// Default categories for fallback
+const defaultCategories = [
+  { id: "temp-1", name: "Electronics" },
+  { id: "temp-2", name: "Clothing" },
+  { id: "temp-3", name: "Home & Kitchen" },
+  { id: "temp-4", name: "Beauty & Personal Care" },
+  { id: "temp-5", name: "Sports & Outdoors" },
+  { id: "temp-6", name: "Books & Stationery" },
+  { id: "temp-7", name: "Toys & Games" },
+  { id: "temp-8", name: "Health & Wellness" },
+  { id: "temp-9", name: "Jewelry & Accessories" },
+  { id: "temp-10", name: "Groceries" },
+];
+
 const AddProductModal = ({ onCancel, onAdd }) => {
   const [formData, setFormData] = useState({
     name: "",
-    category: "",
+    categories: "",
     price: "",
-    stock: "",
+    stock_quantity: "",
     description: "",
-    image: null, // For file upload
+    images: null,
   });
   const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [imagePreview, setImagePreview] = useState(null); // For image preview
+  const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const { data } = await axiosInstance.get("/products/");
-        setCategories(data || []); // Ensure categories is always an array
+        const { data } = await axiosInstance.get("/products/categories/");
+        setCategories(Array.isArray(data) && data.length > 0 ? data : defaultCategories);
       } catch (error) {
         console.error("Fetch categories error:", {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
         });
-        toast.error(error.response?.data?.message || "Failed to load categories.");
-        setCategories([]); // Fallback to empty array on error
+        toast.error(error.response?.data?.detail || "Failed to load categories. Using default categories.");
+        setCategories(defaultCategories);
       }
     };
 
@@ -43,8 +57,8 @@ const AddProductModal = ({ onCancel, onAdd }) => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData({ ...formData, image: file });
-      setImagePreview(URL.createObjectURL(file)); // Preview the image
+      setFormData({ ...formData, images: file });
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
@@ -55,9 +69,10 @@ const AddProductModal = ({ onCancel, onAdd }) => {
     }
 
     try {
+      setIsLoading(true);
       const { data } = await axiosInstance.post("/products/categories/", { name: newCategory });
       setCategories([...categories, data]);
-      setFormData({ ...formData, category: data.id });
+      setFormData({ ...formData, categories: data.id }); // Auto-select new category
       setNewCategory("");
       toast.success("Category added successfully!");
     } catch (error) {
@@ -66,7 +81,9 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         data: error.response?.data,
         message: error.message,
       });
-      toast.error(error.response?.data?.message || "Failed to add category.");
+      toast.error(error.response?.data?.detail || "Failed to add category. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -74,25 +91,47 @@ const AddProductModal = ({ onCancel, onAdd }) => {
     e.preventDefault();
     setIsLoading(true);
 
+    // Validate form inputs
+    if (!formData.name.trim()) {
+      toast.error("Product name is required.");
+      setIsLoading(false);
+      return;
+    }
+    if (!formData.categories) {
+      toast.error("Please select or add a category.");
+      setIsLoading(false);
+      return;
+    }
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      toast.error("Price must be greater than 0.");
+      setIsLoading(false);
+      return;
+    }
+    if (!formData.stock_quantity || parseInt(formData.stock_quantity, 10) < 0) {
+      toast.error("Stock quantity cannot be negative.");
+      setIsLoading(false);
+      return;
+    }
+
     const formDataToSend = new FormData();
     formDataToSend.append("name", formData.name);
-    formDataToSend.append("category", formData.category);
+    formDataToSend.append("categories", formData.categories);
     formDataToSend.append("price", parseFloat(formData.price) || 0);
-    formDataToSend.append("stock", parseInt(formData.stock, 10) || 0);
+    formDataToSend.append("stock_quantity", parseInt(formData.stock_quantity, 10) || 0);
     formDataToSend.append("description", formData.description);
-    if (formData.image) {
-      formDataToSend.append("image", formData.image);
+    formDataToSend.append("verified", "false");
+    if (formData.images) {
+      formDataToSend.append("images", formData.images);
     }
 
     try {
-      const { data } = await axiosInstance.post("/products/", formDataToSend, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const { data } = await axiosInstance.post("/products/", formDataToSend);
       if (data) {
-        onAdd(data);
+        onAdd(data); // Pass new product to parent to update total products
+        setFormData({ name: "", categories: "", price: "", stock_quantity: "", description: "", images: null });
+        setImagePreview(null);
         toast.success("Product added successfully!");
-        setFormData({ name: "", category: "", price: "", stock: "", description: "", image: null }); // Reset form
-        setImagePreview(null); // Clear preview
+        onCancel(); // Close modal after successful submission
       } else {
         throw new Error("Invalid response from server");
       }
@@ -102,17 +141,21 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         data: error.response?.data,
         message: error.message,
       });
-      toast.error(error.response?.data?.message || "Failed to add product.");
+      toast.error(
+        error.response?.data?.detail ||
+        Object.values(error.response?.data || {}).join(" ") ||
+        "Failed to add product. Please check your input and permissions."
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[100] overflow-auto pt-4"> {/* Increased z-index and top alignment */}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[100] overflow-auto pt-4">
       <div className="bg-gray-800 rounded-lg p-4 md:p-6 w-full max-w-md mx-4 my-4 md:mx-auto min-h-[80vh]">
         <h2 className="text-xl md:text-2xl font-semibold text-gray-100 mb-4 text-center">Add Product</h2>
-        <div className="overflow-y-auto"> {/* Scroll only if content overflows */}
+        <div className="overflow-y-auto">
           <form onSubmit={handleSubmit} id="add-product-form" className="space-y-4 p-2">
             <div className="mb-4">
               <label className="block text-gray-300 mb-1 text-sm md:text-base">Name</label>
@@ -128,11 +171,11 @@ const AddProductModal = ({ onCancel, onAdd }) => {
             <div className="mb-4">
               <label className="block text-gray-300 mb-1 text-sm md:text-base">Category</label>
               <select
-                name="category"
-                value={formData.category}
+                name="categories"
+                value={formData.categories}
                 onChange={handleChange}
                 className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 md:px-4 md:py-2 text-sm md:text-base"
-            
+                required
               >
                 <option value="">Select a category</option>
                 {Array.isArray(categories) ? categories.map((cat) => (
@@ -171,11 +214,11 @@ const AddProductModal = ({ onCancel, onAdd }) => {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-gray-300 mb-1 text-sm md:text-base">Stock</label>
+              <label className="block text-gray-300 mb-1 text-sm md:text-base">Stock Quantity</label>
               <input
                 type="number"
-                name="stock"
-                value={formData.stock}
+                name="stock_quantity"
+                value={formData.stock_quantity}
                 onChange={handleChange}
                 className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 md:px-4 md:py-2 text-sm md:text-base"
                 required

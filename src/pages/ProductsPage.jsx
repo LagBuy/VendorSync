@@ -7,11 +7,12 @@ import CategoryDistributionChart from "../components/overview/CategoryDistributi
 import SalesTrendChart from "../components/products/SalesTrendChart";
 import ProductsTable from "../components/products/ProductsTable";
 import { axiosInstance } from "../axios-instance/axios-instance";
+import { toast } from "react-toastify";
 import axios from "axios";
 
 const ProductsPage = () => {
-  const [products, setProducts] = useState([]); // Stores the list of products
-  const [totalProducts, setTotalProducts] = useState(0); // Stores the total count of products
+  const [products, setProducts] = useState([]);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [topSelling, setTopSelling] = useState([]);
   const [lowStock, setLowStock] = useState([]);
   const [exchangeRate, setExchangeRate] = useState(null);
@@ -24,42 +25,40 @@ const ProductsPage = () => {
       try {
         const [productsRes, rateRes] = await Promise.all([
           axiosInstance.get("/products/"),
-          axios.get(
-            "https://api.exchangerate.host/latest?base=USD&symbols=NGN"
-          ),
+          axios.get("https://api.exchangerate.host/latest?base=USD&symbols=NGN"),
         ]);
 
-        const productsData = productsRes.data;
+        const productsData = productsRes.data || [];
         const exchangeRateValue = rateRes.data.rates.NGN;
         const exchangeRateTime = rateRes.data.date;
 
-        // Sort and filter products
-        const sortedBySales = [...productsData].sort(
-          (a, b) => b.sales - a.sales
-        );
-        const lowStockItems = productsData.filter((p) => p.stock < 10);
+        const sortedBySales = [...productsData].sort((a, b) => (b.sales || 0) - (a.sales || 0));
+        const lowStockItems = productsData.filter((p) => (p.stock || 0) < 10);
 
         setProducts(productsData);
         setTopSelling(sortedBySales.slice(0, 5));
         setLowStock(lowStockItems.slice(0, 5));
         setExchangeRate(exchangeRateValue);
         setExchangeRateDate(exchangeRateTime);
-        setTotalProducts(productsData.length); // Update total products count when data is fetched
+        setTotalProducts(productsData.length);
       } catch (err) {
-        console.error("Failed to fetch data:", err);
+        console.error("Failed to fetch data:", {
+          status: err.response?.status,
+          data: err.response?.data,
+          message: err.message,
+        });
+        toast.error(err.response?.data?.detail || "Failed to fetch products. Please check your authentication or permissions.");
       }
     };
 
     fetchData();
-  }, []); // Empty dependency array to fetch data only once
+  }, []);
 
-  // This calculates the total revenue in USD
   const totalRevenueUSD = products.reduce(
-    (sum, product) => sum + product.price * product.sales,
+    (sum, product) => sum + (product.price || 0) * (product.sales || 0),
     0
   );
 
-  // Convert revenue to NGN using the exchange rate
   const totalRevenueNGN = exchangeRate ? totalRevenueUSD * exchangeRate : 0;
 
   const formatCurrency = (amount) =>
@@ -73,22 +72,18 @@ const ProductsPage = () => {
       <Header title="Products" />
 
       <main className="max-w-7xl mx-auto py-6 px-4 lg:px-8">
-        {/* Stats Cards */}
         <motion.div
           className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
         >
-          {/* Total Products */}
           <StatCard
             name="Total Products"
             icon={Package}
             value={totalProducts}
             color="#6366F1"
           />
-
-          {/* Top Selling */}
           <div
             className="relative"
             onMouseEnter={() => setShowTopToast(true)}
@@ -123,8 +118,6 @@ const ProductsPage = () => {
               </motion.div>
             )}
           </div>
-
-          {/* Low Stock */}
           <div
             className="relative"
             onMouseEnter={() => setShowLowToast(true)}
@@ -159,8 +152,6 @@ const ProductsPage = () => {
               </motion.div>
             )}
           </div>
-
-          {/* Revenue in Naira */}
           <StatCard
             name="Total Revenue In Naira"
             icon={DollarSign}
@@ -169,17 +160,13 @@ const ProductsPage = () => {
           />
         </motion.div>
 
-        {/* Exchange rate update info */}
         {exchangeRateDate && (
           <p className="text-sm text-gray-500 mb-4">
             Exchange rate last updated on: {exchangeRateDate}
           </p>
         )}
 
-        {/* Table and Charts */}
         <ProductsTable setTotalProducts={setTotalProducts} />
-
-        {/*  */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-20">
           <SalesTrendChart />
           <CategoryDistributionChart />

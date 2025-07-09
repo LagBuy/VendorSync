@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { axiosInstance } from "../../axios-instance/axios-instance";
+import { toast } from "react-toastify";
 
 const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
   const [step, setStep] = useState(initialEmail ? 3 : 1);
@@ -20,7 +21,8 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showDuplicateEmailModal, setShowDuplicateEmailModal] = useState(false);
 
   const SIGNUP_ENDPOINT = "/auth/signup/";
 
@@ -41,7 +43,7 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
 
     const trimmedFirstName = firstName.trim();
     const trimmedLastName = lastName.trim();
-    const namePattern = /^[A-Za-z\s]+$/; // Allow spaces for multi-word names
+    const namePattern = /^[A-Za-z\s]+$/;
     if (
       !trimmedFirstName ||
       !trimmedLastName ||
@@ -60,9 +62,9 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
       setIsLoading(false);
       return;
     }
-    const dobPattern = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+    const dobPattern = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/;
     if (!dob || !dobPattern.test(dob)) {
-      setError("Date of Birth must be in dd/mm/yyyy format.");
+      setError("Date of Birth must be a valid date in YYYY-MM-DD format.");
       setIsLoading(false);
       return;
     }
@@ -106,14 +108,20 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
       };
 
       const response = await axiosInstance.post(SIGNUP_ENDPOINT, reqBody);
-      
       console.log("Signup Response:", response.data);
-      setStep(1); // Reset step to initial state
-      setShowModal(true); // Show the congratulatory modal
-      console.log("Switching to login form, current step:", step);
+      toast.success("Account created successfully!");
+      setShowSuccessModal(true);
     } catch (e) {
       console.error("Signup Error:", e.response?.data, e.message);
-      setError(e.response?.data?.message || "Signup failed. Please try again.");
+      if (
+        e.response?.data?.message?.includes("email already exists") ||
+        e.response?.data?.detail?.includes("email already exists") ||
+        e.response?.data?.email?.includes("already exists")
+      ) {
+        setShowDuplicateEmailModal(true);
+      } else {
+        setError(e.response?.data?.message || "Signup failed. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -125,9 +133,15 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
     else if (step === 3) setStep(1);
   };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    onSwitch("login"); // Switch to login form after closing modal
+  const handleCloseSuccessModal = () => {
+    setShowSuccessModal(false);
+    onSwitch("login"); // Redirect to login page after successful signup
+  };
+
+  const handleCloseDuplicateEmailModal = () => {
+    setShowDuplicateEmailModal(false);
+    setEmail(""); // Clear email field to encourage a new email
+    setStep(1); // Return to email input step
   };
 
   return (
@@ -146,7 +160,7 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-rose-400"
-              placeholder="Enter your email"
+              placeholder="Enter your valid email"
             />
           </div>
           <button
@@ -154,7 +168,7 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
             className="w-full bg-blue-500 hover:bg-blue-rose-500 text-white font-bold py-2 px-4 rounded-md transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading}
           >
-            {isLoading ? "Processing..." : "Skip & Continue"}
+            {isLoading ? "Processing..." : "Continue"}
           </button>
           <div className="text-sm mt-4 text-center text-gray-600">
             <p>
@@ -218,16 +232,13 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
             />
           </div>
           <div>
-            <label className="block mb-1 text-sm font-medium">
-              Date of Birth
-            </label>
+            <label className="block mb-1 text-sm font-medium">Date of Birth</label>
             <input
-              type="text"
+              type="date"
               required
               value={dob}
               onChange={(e) => setDob(e.target.value)}
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-rose-400"
-              placeholder="dd/mm/yyyy"
             />
           </div>
           <button
@@ -236,7 +247,8 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
               setError("");
               const trimmedFirstName = firstName.trim();
               const trimmedLastName = lastName.trim();
-              const namePattern = /^[A-Za-z\s]+$/; // Allow spaces for multi-word names
+              const namePattern = /^[A-Za-z\s]+$/;
+              const dobPattern = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/;
               if (
                 !trimmedFirstName ||
                 !trimmedLastName ||
@@ -251,6 +263,10 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
                 !/[A-Za-z]/.test(trimmedLastName[0])
               ) {
                 setError("Names must start with a letter.");
+                return;
+              }
+              if (!dob || !dobPattern.test(dob)) {
+                setError("Date of Birth must be a valid date in YYYY-MM-DD format.");
                 return;
               }
               setStep(4);
@@ -276,9 +292,7 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
       {step === 4 && (
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
-            <label className="block mb-1 text-sm font-medium">
-              Business Type
-            </label>
+            <label className="block mb-1 text-sm font-medium">Business Type</label>
             <select
               value={businessType}
               onChange={(e) => setBusinessType(e.target.value)}
@@ -293,9 +307,7 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
           </div>
           {businessType === "Other" && (
             <div>
-              <label className="block mb-1 text-sm font-medium">
-                Custom Business Type
-              </label>
+              <label className="block mb-1 text-sm font-medium">Custom Business Type</label>
               <input
                 type="text"
                 required
@@ -307,9 +319,7 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
             </div>
           )}
           <div>
-            <label className="block mb-1 text-sm font-medium">
-              Depends on Dollar Rate?
-            </label>
+            <label className="block mb-1 text-sm font-medium">Depends on Dollar Rate?</label>
             <select
               value={dependsOnDollarRate}
               onChange={(e) => setDependsOnDollarRate(e.target.value)}
@@ -351,9 +361,7 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
             </div>
           </div>
           <div>
-            <label className="block mb-1 text-sm font-medium">
-              Confirm Password
-            </label>
+            <label className="block mb-1 text-sm font-medium">Confirm Password</label>
             <div className="relative">
               <input
                 type={confirmPasswordVisible ? "text" : "password"}
@@ -364,9 +372,7 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
                 placeholder="Confirm your password"
               />
               <span
-                onClick={() =>
-                  setConfirmPasswordVisible(!confirmPasswordVisible)
-                }
+                onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
                 className="absolute right-3 top-3 cursor-pointer text-gray-600"
               >
                 {confirmPasswordVisible ? <FaEyeSlash /> : <FaEye />}
@@ -393,20 +399,46 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
           </div>
         </form>
       )}
-
-      {showModal && (
+      {showSuccessModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
             <h3 className="text-xl font-bold text-center mb-4">Congratulations!</h3>
             <p className="text-center mb-4">
-              Congratulations for joining LagBuy, a platform for a seamless business transaction and shopping experience.
+              Your account has been created successfully. Please log in to continue.
             </p>
             <div className="text-center">
               <button
-                onClick={handleCloseModal}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+                onClick={handleCloseSuccessModal}
+                className="bg-blue-500 hover:bg-blue-rose-500 text-white font-bold py-2 px-4 rounded"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDuplicateEmailModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h3 className="text-xl font-bold text-center mb-4">Email Already Exists</h3>
+            <p className="text-center mb-4">
+              The email you entered already exists. Do you have an alternative email?
+            </p>
+            <div className="text-center space-x-4">
+              <button
+                onClick={handleCloseDuplicateEmailModal}
+                className="bg-blue-500 hover:bg-blue-rose-500 text-white font-bold py-2 px-4 rounded"
+              >
+                Try Another Email
+              </button>
+              <button
+                onClick={() => {
+                  setShowDuplicateEmailModal(false);
+                  onSwitch("login");
+                }}
+                className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+              >
+                Log In
               </button>
             </div>
           </div>

@@ -39,7 +39,7 @@ const StepOneEmail = ({ email, setEmail, handleProceed, onSwitch }) => {
       </button>
 
       <p className="text-center mt-4 text-sm text-[#FFF9B0]">
-        Already have an account?{" "}
+        Already have an account? {" "}
         <button
           onClick={() => onSwitch("login")}
           className="text-[#2E7D32] hover:underline"

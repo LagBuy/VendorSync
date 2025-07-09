@@ -9,7 +9,7 @@ import ProductRow from "./ProductRow";
 import AddProductModal from "./AddProductModal";
 import EditProductModal from "./EditProductModal";
 
-const ProductsTable = () => {
+const ProductsTable = ({ setTotalProducts }) => {
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -22,29 +22,31 @@ const ProductsTable = () => {
       setIsLoading(true);
       try {
         const { data } = await axiosInstance.get("/products/");
-        setProducts(data || []); // Ensure products is always an array
+        setProducts(data || []);
+        setTotalProducts?.(data.length);
+        toast.success("Products loaded successfully!");
       } catch (error) {
         console.error("Fetch products error:", {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
         });
-        toast.error(error.response?.data?.message || "Failed to load products.");
-        setProducts([]); // Set to empty array on error
+        toast.error(error.response?.data?.detail || "Failed to load products. Please check your authentication or permissions.");
+        setProducts([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchProducts();
-  }, []);
+  }, [setTotalProducts]);
 
   useEffect(() => {
     const filtered = Array.isArray(products)
       ? products.filter(
           (product) =>
-            product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            product.category.toLowerCase().includes(searchTerm.toLowerCase())
+            product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            product.category?.toLowerCase().includes(searchTerm.toLowerCase())
         )
       : [];
     setFilteredProducts(filtered);
@@ -54,6 +56,7 @@ const ProductsTable = () => {
     try {
       await axiosInstance.delete(`/products/${id}/`);
       setProducts(products.filter((p) => p.id !== id));
+      setTotalProducts?.(products.length - 1);
       toast.success("Product deleted successfully!");
     } catch (error) {
       console.error("Delete product error:", {
@@ -61,7 +64,7 @@ const ProductsTable = () => {
         data: error.response?.data,
         message: error.message,
       });
-      toast.error(error.response?.data?.message || "Failed to delete product. Please try again.");
+      toast.error(error.response?.data?.detail || "Failed to delete product. Please check your permissions.");
     }
   };
 
@@ -74,11 +77,14 @@ const ProductsTable = () => {
       products.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
     );
     setEditingProduct(null);
+    toast.success("Product updated successfully!");
   };
 
   const handleAdd = (newProduct) => {
     setProducts([...products, { ...newProduct, sales: newProduct.sales || 0 }]);
+    setTotalProducts?.(products.length + 1);
     setShowAddModal(false);
+    toast.success("Product added successfully!");
   };
 
   return (
@@ -89,7 +95,7 @@ const ProductsTable = () => {
       transition={{ delay: 0.2 }}
     >
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-100 md: px-1">
+        <h2 className="text-xl font-semibold text-gray-100 md:px-1">
           Products
         </h2>
         <div className="flex gap-4 items-center">
