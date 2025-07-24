@@ -86,7 +86,7 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
     }
 
     try {
-      const { data } = await axiosInstance.put(`/products/${product.id}/`, formDataToSend);
+      const { data } = await axiosInstance.patch(`/products/${product.id}/`, formDataToSend);
       if (data) {
         onSave(data);
         toast.success("Product updated successfully!");
@@ -133,7 +133,6 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
                 value={formData.categories}
                 onChange={handleChange}
                 className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 md:px-4 md:py-2 text-sm md:text-base"
-                required
               >
                 <option value="">Select a category</option>
                 {Array.isArray(categories) ? categories.map((cat) => (

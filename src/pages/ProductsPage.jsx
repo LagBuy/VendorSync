@@ -27,6 +27,8 @@ const ProductsPage = () => {
           axiosInstance.get("/products/"),
           axios.get("https://api.exchangerate.host/latest?base=USD&symbols=NGN"),
         ]);
+        
+        console.log(productsRes);
 
         const productsData = productsRes.data || [];
         const exchangeRateValue = rateRes.data.rates.NGN;
@@ -83,7 +85,7 @@ const ProductsPage = () => {
             icon={Package}
             value={totalProducts}
             color="#6366F1"
-          />
+          />  
           <div
             className="relative"
             onMouseEnter={() => setShowTopToast(true)}

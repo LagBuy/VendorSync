@@ -1,20 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { axiosInstance } from "../../axios-instance/axios-instance";
-
-// Default categories for fallback
-const defaultCategories = [
-  { id: "temp-1", name: "Electronics" },
-  { id: "temp-2", name: "Clothing" },
-  { id: "temp-3", name: "Home & Kitchen" },
-  { id: "temp-4", name: "Beauty & Personal Care" },
-  { id: "temp-5", name: "Sports & Outdoors" },
-  { id: "temp-6", name: "Books & Stationery" },
-  { id: "temp-7", name: "Toys & Games" },
-  { id: "temp-8", name: "Health & Wellness" },
-  { id: "temp-9", name: "Jewelry & Accessories" },
-  { id: "temp-10", name: "Groceries" },
-];
+import Cookies from "js-cookie";
 
 const AddProductModal = ({ onCancel, onAdd }) => {
   const [formData, setFormData] = useState({
@@ -29,24 +16,57 @@ const AddProductModal = ({ onCancel, onAdd }) => {
   const [newCategory, setNewCategory] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
+        const token = Cookies.get("jwt-token");
+        if (!token) {
+          toast.error("Please log in to access categories.");
+          return;
+        }
         const { data } = await axiosInstance.get("/products/categories/");
-        setCategories(Array.isArray(data) && data.length > 0 ? data : defaultCategories);
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+        } else {
+          toast.error("No categories available. Please add a new category.");
+        }
       } catch (error) {
         console.error("Fetch categories error:", {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
         });
-        toast.error(error.response?.data?.detail || "Failed to load categories. Using default categories.");
-        setCategories(defaultCategories);
+        toast.error(error.response?.data?.detail || "Failed to load categories.");
+      }
+    };
+
+    const checkVendorStatus = async () => {
+      try {
+        const token = Cookies.get("jwt-token");
+        if (!token) {
+          toast.error("Please log in to continue.");
+          return;
+        }
+
+        const { data } = await axiosInstance.get("/auth/user/");
+        if (!data.roles.includes("vendor")) {
+          toast.error("You do not have vendor permissions. Please contact support.");
+          return;
+        }
+      } catch (error) {
+        console.error("Check vendor status error:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        toast.error("Failed to verify vendor status. Please contact support.");
       }
     };
 
     fetchCategories();
+    checkVendorStatus();
   }, []);
 
   const handleChange = (e) => {
@@ -54,11 +74,43 @@ const AddProductModal = ({ onCancel, onAdd }) => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       setFormData({ ...formData, images: file });
       setImagePreview(URL.createObjectURL(file));
+
+      // Upload image to get image_url
+      try {
+        setIsLoading(true);
+        const token = Cookies.get("jwt-token");
+        if (!token) {
+          toast.error("You must be logged in to upload an image.");
+          return;
+        }
+
+        const imageFormData = new FormData();
+        imageFormData.append("image", file);
+      
+        const { data } = await axiosInstance.post("/products/upload-image/", imageFormData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        setImageUrl(data.image_url || data.url);
+        toast.success("Image uploaded successfully!");
+      } catch (error) {
+        console.error("Image upload error:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+
+        toast.error(error.response?.data?.detail || "Failed to upload image. Please try again.");
+        setFormData({ ...formData, images: null });
+        setImagePreview(null);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -70,6 +122,11 @@ const AddProductModal = ({ onCancel, onAdd }) => {
 
     try {
       setIsLoading(true);
+      const token = Cookies.get("jwt-token");
+      if (!token) {
+        toast.error("You must be logged in to add a category.");
+        return;
+      }
       const { data } = await axiosInstance.post("/products/categories/", { name: newCategory });
       setCategories([...categories, data]);
       setFormData({ ...formData, categories: data.id }); // Auto-select new category
@@ -112,24 +169,42 @@ const AddProductModal = ({ onCancel, onAdd }) => {
       setIsLoading(false);
       return;
     }
+    if (formData.images && !imageUrl) {
+      toast.error("Please upload a valid image.");
+      setIsLoading(false);
+      return;
+    }
 
     const formDataToSend = new FormData();
+
     formDataToSend.append("name", formData.name);
+
     formDataToSend.append("categories", formData.categories);
+
     formDataToSend.append("price", parseFloat(formData.price) || 0);
+
     formDataToSend.append("stock_quantity", parseInt(formData.stock_quantity, 10) || 0);
+    
     formDataToSend.append("description", formData.description);
+
     formDataToSend.append("verified", "false");
-    if (formData.images) {
-      formDataToSend.append("images", formData.images);
+    if (imageUrl) {
+      formDataToSend.append("images", imageUrl);
     }
 
     try {
+      const token = Cookies.get("jwt-token");
+      if (!token) {
+        toast.error("You must be logged in to add a product.");
+        setIsLoading(false);
+        return;
+      }
       const { data } = await axiosInstance.post("/products/", formDataToSend);
       if (data) {
         onAdd(data); // Pass new product to parent to update total products
         setFormData({ name: "", categories: "", price: "", stock_quantity: "", description: "", images: null });
         setImagePreview(null);
+        setImageUrl(null);
         toast.success("Product added successfully!");
         onCancel(); // Close modal after successful submission
       } else {
@@ -143,8 +218,8 @@ const AddProductModal = ({ onCancel, onAdd }) => {
       });
       toast.error(
         error.response?.data?.detail ||
-        Object.values(error.response?.data || {}).join(" ") ||
-        "Failed to add product. Please check your input and permissions."
+          Object.values(error.response?.data || {}).join(" ") ||
+          "Failed to add product. Please check your input and permissions."
       );
     } finally {
       setIsLoading(false);
@@ -175,7 +250,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
                 value={formData.categories}
                 onChange={handleChange}
                 className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 md:px-4 md:py-2 text-sm md:text-base"
-                required
+              
               >
                 <option value="">Select a category</option>
                 {Array.isArray(categories) ? categories.map((cat) => (

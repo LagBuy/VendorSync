@@ -21,7 +21,7 @@ const ProductsTable = ({ setTotalProducts }) => {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const { data } = await axiosInstance.get("/products/");
+        const { data: {data} } = await axiosInstance.get("/products/");
         setProducts(data || []);
         setTotalProducts?.(data.length);
         toast.success("Products loaded successfully!");

@@ -15,6 +15,9 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
   const [customBusinessType, setCustomBusinessType] = useState("");
   const [dependsOnDollarRate, setDependsOnDollarRate] = useState("");
   const [phone, setPhone] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [businessLocationCity, setBusinessLocationCity] = useState("");
+  const [businessLocationState, setBusinessLocationState] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -25,6 +28,7 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
   const [showDuplicateEmailModal, setShowDuplicateEmailModal] = useState(false);
 
   const SIGNUP_ENDPOINT = "/auth/signup/";
+  const VERIFY_EMAIL_ENDPOINT = "/auth/signup/verify-email/";
 
   const handleSkipEmailVerification = (e) => {
     e.preventDefault();
@@ -43,6 +47,9 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
 
     const trimmedFirstName = firstName.trim();
     const trimmedLastName = lastName.trim();
+    const trimmedBusinessName = businessName.trim();
+    const trimmedBusinessLocationCity = businessLocationCity.trim();
+    const trimmedBusinessLocationState = businessLocationState.trim();
     const namePattern = /^[A-Za-z\s]+$/;
     if (
       !trimmedFirstName ||
@@ -71,6 +78,36 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
     const phonePattern = /^(07|08|09)\d{9}$/;
     if (!phonePattern.test(phone)) {
       setError("Phone must be 11 digits and start with 07, 08, or 09.");
+      setIsLoading(false);
+      return;
+    }
+    if (!trimmedBusinessName || !namePattern.test(trimmedBusinessName)) {
+      setError("Business name must contain only letters and spaces.");
+      setIsLoading(false);
+      return;
+    }
+    if (!/[A-Za-z]/.test(trimmedBusinessName[0])) {
+      setError("Business name must start with a letter.");
+      setIsLoading(false);
+      return;
+    }
+    if (!trimmedBusinessLocationCity || !namePattern.test(trimmedBusinessLocationCity)) {
+      setError("Business city must contain only letters and spaces.");
+      setIsLoading(false);
+      return;
+    }
+    if (!/[A-Za-z]/.test(trimmedBusinessLocationCity[0])) {
+      setError("Business city must start with a letter.");
+      setIsLoading(false);
+      return;
+    }
+    if (!trimmedBusinessLocationState || !namePattern.test(trimmedBusinessLocationState)) {
+      setError("Business state must contain only letters and spaces.");
+      setIsLoading(false);
+      return;
+    }
+    if (!/[A-Za-z]/.test(trimmedBusinessLocationState[0])) {
+      setError("Business state must start with a letter.");
       setIsLoading(false);
       return;
     }
@@ -103,13 +140,30 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
         dob,
         phone_number: phone,
         password1: password,
+        roles: ["user", "vendor"],
         business_type: businessType === "Other" ? customBusinessType : businessType,
         depends_on_dollar_rate: dependsOnDollarRate === "Yes",
+        business_name: trimmedBusinessName,
+        business_location_city: trimmedBusinessLocationCity,
+        business_location_state: trimmedBusinessLocationState,
       };
 
-      const response = await axiosInstance.post(SIGNUP_ENDPOINT, reqBody);
-      console.log("Signup Response:", response.data);
-      toast.success("Account created successfully!");
+      const signupResponse = await axiosInstance.post(SIGNUP_ENDPOINT, reqBody);
+      console.log("Signup Response:", signupResponse.data);
+      toast.success("Account created successfully! Sending verification email...");
+
+      // Request verification email
+      try {
+        await axiosInstance.post(VERIFY_EMAIL_ENDPOINT, { key: email });
+        toast.success(`Verification email sent to ${email}. Please check your inbox.`);
+      } catch (verifyError) {
+        console.error("Verification Email Error:", verifyError.response?.data, verifyError.message);
+        toast.error(
+          verifyError.response?.data?.message ||
+            "Failed to send verification email. Please try again or contact support."
+        );
+      }
+
       setShowSuccessModal(true);
     } catch (e) {
       console.error("Signup Error:", e.response?.data, e.message);
@@ -292,6 +346,39 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
       {step === 4 && (
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
+            <label className="block mb-1 text-sm font-medium">Business Name</label>
+            <input
+              type="text"
+              required
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-rose-400"
+              placeholder="Enter your business name"
+            />
+          </div>
+          <div>
+            <label className="block mb-1 text-sm font-medium">Business Location City</label>
+            <input
+              type="text"
+              required
+              value={businessLocationCity}
+              onChange={(e) => setBusinessLocationCity(e.target.value)}
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-rose-400"
+              placeholder="Enter your business city"
+            />
+          </div>
+          <div>
+            <label className="block mb-1 text-sm font-medium">Business Location State</label>
+            <input
+              type="text"
+              required
+              value={businessLocationState}
+              onChange={(e) => setBusinessLocationState(e.target.value)}
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-rose-400"
+              placeholder="Enter your business state"
+            />
+          </div>
+          <div>
             <label className="block mb-1 text-sm font-medium">Business Type</label>
             <select
               value={businessType}
@@ -404,7 +491,13 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
             <h3 className="text-xl font-bold text-center mb-4">Congratulations!</h3>
             <p className="text-center mb-4">
-              Your account has been created successfully. Please log in to continue.
+              Your vendor account has been created successfully. A verification email has been sent to {email}. Please check your inbox (and spam/junk folder) and click the verification link to activate your vendor status and add products. If you need assistance, contact{" "}
+              <a
+                href="mailto:support@lagbuy.com"
+                className="text-blue-500 hover:underline"
+              >
+                support@lagbuy.com
+              </a>.
             </p>
             <div className="text-center">
               <button

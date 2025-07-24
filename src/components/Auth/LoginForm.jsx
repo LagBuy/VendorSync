@@ -35,6 +35,9 @@ const LoginForm = ({ onSwitch, onLogin }) => {
     try {
       const { data } = await axiosInstance.post("/auth/login/", reqBody);
       const { user, access } = data;
+      
+       console.log(access);
+
       Cookies.set("jwt-token", access, { expires: 7 });
 
       if (rememberMe) {

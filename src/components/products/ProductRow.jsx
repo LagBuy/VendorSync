@@ -1,7 +1,7 @@
 const ProductRow = ({ product, onEdit, onDelete }) => (
   <tr className="text-gray-300 hover:bg-gray-700 transition">
     <td className="px-4 py-3">
-      <img src={product.image} className="w-12 h-12 object-cover rounded" />
+      <img src={product.images[0]} className="w-12 h-12 object-cover rounded" />
     </td>
     <td className="px-4 py-3">{product.name}</td>
     <td className="px-4 py-3">{product.category}</td>
