@@ -54,7 +54,7 @@ const ProductsTable = ({ setTotalProducts }) => {
 
   const handleDelete = async (id) => {
     try {
-      await axiosInstance.delete(`/products/${id}/`);
+      await axiosInstance.delete(`/products/${id}`);
       setProducts(products.filter((p) => p.id !== id));
       setTotalProducts?.(products.length - 1);
       toast.success("Product deleted successfully!");
@@ -64,6 +64,7 @@ const ProductsTable = ({ setTotalProducts }) => {
         data: error.response?.data,
         message: error.message,
       });
+      
       toast.error(error.response?.data?.detail || "Failed to delete product. Please check your permissions.");
     }
   };

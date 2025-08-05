@@ -15,6 +15,7 @@ const ProductsPage = () => {
   const [totalProducts, setTotalProducts] = useState(0);
   const [topSelling, setTopSelling] = useState([]);
   const [lowStock, setLowStock] = useState([]);
+  const [lowStockCount, setLowStockCount] = useState(0); // New state for low_stock_count
   const [exchangeRate, setExchangeRate] = useState(null);
   const [exchangeRateDate, setExchangeRateDate] = useState(null);
   const [showTopToast, setShowTopToast] = useState(false);
@@ -23,23 +24,30 @@ const ProductsPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productsRes, rateRes] = await Promise.all([
+        const [productsRes, lowStockRes, rateRes] = await Promise.all([
           axiosInstance.get("/products/"),
+          axiosInstance.get("/vendors/lowstockcount/?lt=10"),
           axios.get("https://api.exchangerate.host/latest?base=USD&symbols=NGN"),
         ]);
-        
-        console.log(productsRes);
 
-        const productsData = productsRes.data || [];
+        console.log("Products Response:", productsRes.data);
+        console.log("Low Stock Response:", lowStockRes.data);
+
+        const productsData = productsRes.data?.data || productsRes.data || [];
+        const lowStockData = lowStockRes.data?.data?.low_stock_products || [];
+        const lowStockCountData = lowStockRes.data?.data?.low_stock_count || 0;
         const exchangeRateValue = rateRes.data.rates.NGN;
         const exchangeRateTime = rateRes.data.date;
 
         const sortedBySales = [...productsData].sort((a, b) => (b.sales || 0) - (a.sales || 0));
-        const lowStockItems = productsData.filter((p) => (p.stock || 0) < 10);
+        const lowStockItems = lowStockData.length > 0 
+          ? lowStockData.slice(0, 5)
+          : productsData.filter((p) => (p.stock || 0) < 10).slice(0, 5);
 
         setProducts(productsData);
         setTopSelling(sortedBySales.slice(0, 5));
-        setLowStock(lowStockItems.slice(0, 5));
+        setLowStock(lowStockItems);
+        setLowStockCount(lowStockCountData);
         setExchangeRate(exchangeRateValue);
         setExchangeRateDate(exchangeRateTime);
         setTotalProducts(productsData.length);
@@ -49,7 +57,15 @@ const ProductsPage = () => {
           data: err.response?.data,
           message: err.message,
         });
-        toast.error(err.response?.data?.detail || "Failed to fetch products. Please check your authentication or permissions.");
+        toast.error(err.response?.data?.detail || "Failed to fetch products or low stock data. Please check your authentication or permissions.");
+
+        // Fallback for low stock if endpoint fails
+        if (err.response?.config?.url.includes("lowstockcount")) {
+          const productsData = products.length > 0 ? products : [];
+          const lowStockItems = productsData.filter((p) => (p.stock || 0) < 10).slice(0, 5);
+          setLowStock(lowStockItems);
+          setLowStockCount(lowStockItems.length);
+        }
       }
     };
 
@@ -129,7 +145,7 @@ const ProductsPage = () => {
             <StatCard
               name="Low Stock"
               icon={AlertTriangle}
-              value={lowStock.length}
+              value={lowStockCount}
               color="#F59E0B"
             />
             {showLowToast && (
@@ -141,7 +157,7 @@ const ProductsPage = () => {
               >
                 <div className="p-4">
                   <h4 className="text-sm font-semibold mb-2 text-yellow-400">
-                    ⚠️ Low Selling Products:
+                    ⚠️ Low Stock Products:
                   </h4>
                   <ul className="space-y-1 text-sm">
                     {lowStock.map((product, index) => (

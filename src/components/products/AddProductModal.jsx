@@ -26,6 +26,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
           toast.error("Please log in to access categories.");
           return;
         }
+
         const { data } = await axiosInstance.get("/products/categories/");
         if (Array.isArray(data) && data.length > 0) {
           setCategories(data);
@@ -38,6 +39,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
           data: error.response?.data,
           message: error.message,
         });
+
         toast.error(error.response?.data?.detail || "Failed to load categories.");
       }
     };
@@ -127,6 +129,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         toast.error("You must be logged in to add a category.");
         return;
       }
+
       const { data } = await axiosInstance.post("/products/categories/", { name: newCategory });
       setCategories([...categories, data]);
       setFormData({ ...formData, categories: data.id }); // Auto-select new category
@@ -199,6 +202,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         setIsLoading(false);
         return;
       }
+
       const { data } = await axiosInstance.post("/products/", formDataToSend);
       if (data) {
         onAdd(data); // Pass new product to parent to update total products
@@ -257,6 +261,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 )) : <option disabled>No categories available</option>}
               </select>
+              
               <div className="mt-2 flex flex-col md:flex-row gap-2">
                 <input
                   type="text"
