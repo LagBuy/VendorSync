@@ -2,9 +2,6 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { toast } from "react-toastify";
 
-// Debug environment variable
-console.log("VITE_BASE_URL:", import.meta.env.VITE_BASE_URL);
-
 // Ensure baseURL has no trailing slash
 const baseURL = (import.meta.env.VITE_BASE_URL || "https://api.lagbuy.com/api/v1").replace(/\/+$/, "");
 
