@@ -276,7 +276,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         return;
       }
 
-      const { data } = await axiosInstance.post("/products/", formDataToSend);
+      const { data } = await axiosInstance.post("/products", formDataToSend);
       if (data) {
         onAdd(data); // Pass new product to ProductsTable
         setFormData({
