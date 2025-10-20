@@ -22,24 +22,42 @@ const OverViewPage = () => {
   const fetchOverviewData = async () => {
     setLoading(true);
     try {
-      const [salesRes, newCustRes, prodRes] = await Promise.all([
+      const [salesRes, customersRes, prodRes] = await Promise.all([
         axiosInstance.get("/vendors/totalsale/"),
-        axiosInstance.get("/vendors/newcustomers/"),
+        axiosInstance.get("/vendors/customers-overview/"),
         axiosInstance.get("/vendors/totalproduct/"),
       ]);
+      console.log("Total sales fetched successfully:", salesRes.data);
+      console.log(
+        "Customers overview fetched successfully:",
+        customersRes.data
+      );
+      console.log("Total products fetched successfully:", prodRes.data);
+
+      const newCustomers = customersRes.data.newToday || 0;
       setStats({
         totalSales: salesRes.data.totalSale || 0,
-        newCustomers: newCustRes.data.newCustomers || 0,
+        newCustomers,
         totalProducts: prodRes.data.totalProducts || 0,
-        conversionRate: stats.conversionRate,
+        conversionRate: calculateConversionRate(newCustomers),
       });
     } catch (err) {
-      console.error("Error fetching overview data:", err);
+      console.error("Error fetching overview data:", {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message,
+      });
       setToast({
         show: true,
         message: "⚠️ Failed to load overview stats. Please try again.",
       });
       setTimeout(() => setToast({ show: false, message: "" }), 4000);
+      setStats({
+        totalSales: 0,
+        newCustomers: 0,
+        totalProducts: 0,
+        conversionRate: "0.00",
+      });
     }
     setLoading(false);
   };
@@ -49,7 +67,8 @@ const OverViewPage = () => {
       const exchangeResponse = await fetch(
         "https://api.exchangerate-api.com/v4/latest/USD"
       );
-      if (!exchangeResponse.ok) throw new Error("Failed to fetch exchange rate");
+      if (!exchangeResponse.ok)
+        throw new Error("Failed to fetch exchange rate");
       const exchangeData = await exchangeResponse.json();
       setExchangeRate(exchangeData.rates.NGN || 0);
     } catch (err) {
@@ -92,8 +111,8 @@ const OverViewPage = () => {
         />
       </div>
 
-      <Header 
-        title="Overview Dashboard" 
+      <Header
+        title="Overview Dashboard"
         className="text-white font-bold text-4xl mb-8 relative z-10"
         icon={<Sparkles className="text-yellow-500 mr-3" />}
       />
@@ -107,8 +126,8 @@ const OverViewPage = () => {
             className="fixed top-4 right-4 px-6 py-4 bg-gradient-to-r from-red-500/90 to-red-600/90 text-white z-50 shadow-2xl rounded-2xl flex items-center justify-between gap-4 max-w-md w-full mx-auto backdrop-blur-sm border border-red-400"
           >
             <span className="text-sm font-medium flex-1">{toast.message}</span>
-            <button 
-              onClick={handleCloseToast} 
+            <button
+              onClick={handleCloseToast}
               className="font-bold text-lg text-white hover:text-yellow-300 transition-colors duration-200 flex-shrink-0"
             >
               ×
@@ -143,13 +162,15 @@ const OverViewPage = () => {
                 <StatCard
                   name="Total Sales"
                   icon={Zap}
-                  value={`₦${convertToNaira(stats.totalSales).toLocaleString()}`}
+                  value={`₦${convertToNaira(
+                    stats.totalSales
+                  ).toLocaleString()}`}
                   color="#EAB308"
                   className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl hover:shadow-yellow-500/20 transition-all duration-500 border border-gray-800 hover:border-yellow-500/50 text-white text-xl backdrop-blur-sm"
                   iconBg="bg-yellow-500/20"
                 />
               </motion.div>
-              
+
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -188,7 +209,7 @@ const OverViewPage = () => {
                 <StatCard
                   name="Conversion Rate"
                   icon={BarChart2}
-                  value={`${calculateConversionRate(stats.newCustomers)}%`}
+                  value={`${stats.conversionRate}%`}
                   color="#22C55E"
                   className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl hover:shadow-green-500/20 transition-all duration-500 border border-gray-800 hover:border-green-500/50 text-white text-xl backdrop-blur-sm"
                   iconBg="bg-green-500/20"
@@ -212,15 +233,17 @@ const OverViewPage = () => {
             </div>
             <SalesOverviewChart />
           </div>
-          
+
           <div className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl p-8 border border-gray-800 backdrop-blur-sm">
             <div className="flex items-center mb-6">
               <ShoppingBag className="mr-3 text-green-500" size={24} />
-              <h3 className="text-xl font-bold text-white">Category Distribution</h3>
+              <h3 className="text-xl font-bold text-white">
+                Category Distribution
+              </h3>
             </div>
             <CategoryDistributionChart />
           </div>
-          
+
           <div className="lg:col-span-2 bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl p-8 border border-gray-800 backdrop-blur-sm">
             <div className="flex items-center mb-6">
               <Users className="mr-3 text-yellow-500" size={24} />
@@ -242,7 +265,10 @@ const OverViewPage = () => {
               <div className="flex items-center">
                 <Zap className="text-yellow-500 mr-3" size={20} />
                 <p className="text-white font-semibold">
-                  Current Exchange Rate: <span className="text-green-500">1 USD = {exchangeRate?.toFixed(2)} NGN</span>
+                  Current Exchange Rate:{" "}
+                  <span className="text-green-500">
+                    1 USD = {exchangeRate?.toFixed(2)} NGN
+                  </span>
                 </p>
               </div>
               <p className="text-gray-400 text-sm">

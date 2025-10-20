@@ -19,73 +19,77 @@ const UsersPage = () => {
   const [lostCustomers, setLostCustomers] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Function to calculate customer stats
-  const calculateCustomerStats = (customers) => {
-    const today = new Date();
-    let newCustomers = 0;
-    let active = 0;
-    let lost = 0;
-
-    customers.forEach((customer) => {
-      const lastPurchaseDate = new Date(customer.lastPurchaseDate);
-      const daysSinceLastPurchase = Math.floor(
-        (today - lastPurchaseDate) / (1000 * 60 * 60 * 24)
-      );
-
-      // Checking role of the customer: "also a vendor" or "customer"
-      customer.role =
-        customer.businessType === "Vendor" ? "also a vendor" : "customer";
-
-      if (daysSinceLastPurchase <= 1) {
-        newCustomers++; // New customer who bought today
-      } else if (daysSinceLastPurchase <= 90) {
-        active++; // Active customers
-      } else {
-        lost++; // Lost customers who haven't bought in 3 months
-      }
-    });
-
-    setTotalCustomers(customers.length);
-    setNewCustomersToday(newCustomers);
-    setActiveCustomers(active);
-    setLostCustomers(lost);
-  };
-
   useEffect(() => {
-    const loadCustomers = async () => {
+    const loadData = async () => {
       setLoading(true);
       try {
-        const { data } = await axiosInstance.get("/customers");
-        setCustomers(data);
-        calculateCustomerStats(data);
+        // Fetch customers overview data
+        console.log(
+          "Fetching customers overview from /vendors/customers-overview/..."
+        );
+        const overviewResponse = await axiosInstance.get(
+          "/vendors/customers-overview/"
+        );
+        console.log(
+          "Customers overview fetched successfully:",
+          overviewResponse.data
+        );
+
+        // Extract metrics from overview response
+        const overviewData = overviewResponse.data;
+        setTotalCustomers(overviewData.total || 0);
+        setNewCustomersToday(overviewData.newToday || 0);
+        setActiveCustomers(overviewData.active || 0);
+        setLostCustomers(overviewData.lost || 0);
+
+        // Fetch customers data for table and charts
+        console.log(
+          "Fetching customers data for table from /vendors/customers/..."
+        );
+        const customersResponse = await axiosInstance.get(
+          "/vendors/customers/"
+        );
+        console.log(
+          "Customers data fetched successfully:",
+          customersResponse.data
+        );
+
+        setCustomers(customersResponse.data);
+
         toast.success("Customer data loaded successfully!", {
           position: "top-center",
           autoClose: 3000,
         });
       } catch (error) {
-        console.error("Error fetching customers:", {
+        console.error("Error fetching data:", {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
         });
-        
-        const errorMessage = error.response?.data?.message || "Failed to load customer data.";
-        toast.error(errorMessage, { 
+        const errorMessage =
+          error.response?.data?.message || "Failed to load customer data.";
+        toast.error(errorMessage, {
           position: "top-center",
           autoClose: 3000,
         });
+        // Set fallback values on error
+        setCustomers([]);
+        setTotalCustomers(0);
+        setNewCustomersToday(0);
+        setActiveCustomers(0);
+        setLostCustomers(0);
       } finally {
         setLoading(false);
       }
     };
 
-    loadCustomers();
+    loadData();
   }, []);
 
   return (
     <div className="flex-1 overflow-auto relative z-10 bg-gradient-to-br from-[#111827] to-[#000000] min-h-screen">
       <Header title="Customers" />
-      <ToastContainer 
+      <ToastContainer
         position="top-center"
         autoClose={3000}
         hideProgressBar={false}
@@ -97,7 +101,7 @@ const UsersPage = () => {
         pauseOnHover
         theme="dark"
         style={{
-          fontSize: '14px',
+          fontSize: "14px",
         }}
       />
 
@@ -112,7 +116,7 @@ const UsersPage = () => {
           {loading ? (
             // Loading skeleton
             Array.from({ length: 4 }).map((_, index) => (
-              <div 
+              <div
                 key={index}
                 className="bg-gradient-to-br from-[#111827] to-[#000000] rounded-xl p-6 border border-[#1F2937] animate-pulse"
               >

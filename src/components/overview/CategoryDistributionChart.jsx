@@ -14,62 +14,38 @@ const COLORS = ["#6366F1", "#8B5CF6", "#EC4899", "#10B981", "#F59E0B"];
 
 const CategoryDistributionChart = () => {
   const [categoryData, setCategoryData] = useState([]);
-  const [products, setProducts] = useState([]);
 
-  const fetchProducts = async () => {
+  const fetchCategoryDistribution = async () => {
     try {
-      const response = await axiosInstance.get("/products/");
-      setProducts(response.data);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    }
-  };
+      console.log(
+        "Fetching category distribution from /api/v1/vendors/categorydistribution/..."
+      );
+      const response = await axiosInstance.get(
+        "/api/v1/vendors/categorydistribution/"
+      );
+      console.log("Category distribution fetched successfully:", response.data);
 
-  const calculateCategoryDistribution = (products) => {
-    const categorySales = {};
-
-    products.forEach((product) => {
-      const category = product.category || "Uncategorized";
-      if (!categorySales[category]) {
-        categorySales[category] = 0;
-      }
-      categorySales[category] += product.price;
-    });
-
-    return Object.keys(categorySales).map((category) => ({
-      name: category,
-      value: categorySales[category],
-    }));
-  };
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  useEffect(() => {
-    if (products.length > 0) {
-      const data = calculateCategoryDistribution(products);
+      // Ensure response data is in the correct format: [{ name: string, value: number }, ...]
+      const data = Array.isArray(response.data)
+        ? response.data.map((item) => ({
+            name: item.name || item.category || "Uncategorized",
+            value: Number(item.value) || 0,
+          }))
+        : [];
       setCategoryData(data);
-    }
-  }, [products]);
-
-  const handleProductChange = async (product) => {
-    try {
-      if (product.id) {
-        const response = await axiosInstance.put(`/products/${product.id}`, product);
-        const updatedProduct = response.data;
-        setProducts((prev) =>
-          prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
-        );
-      } else {
-        const response = await axiosInstance.post("/products", product);
-        const newProduct = response.data;
-        setProducts((prev) => [...prev, newProduct]);
-      }
     } catch (error) {
-      console.error("Error handling product change:", error);
+      console.error("Error fetching category distribution:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+      setCategoryData([]); // Set empty array on error to prevent chart issues
     }
   };
+
+  useEffect(() => {
+    fetchCategoryDistribution();
+  }, []);
 
   return (
     <motion.div

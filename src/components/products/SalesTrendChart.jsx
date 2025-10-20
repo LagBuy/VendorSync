@@ -10,58 +10,37 @@ import {
   Legend,
 } from "recharts";
 import { useState, useEffect } from "react";
-
-// Initial sales data (you can replace this with data fetched from  API)
-const initialSalesData = [
-  { month: "Jan", sales: 4000 },
-  { month: "Feb", sales: 3000 },
-  { month: "Mar", sales: 5000 },
-  { month: "Apr", sales: 4500 },
-  { month: "May", sales: 6000 },
-  { month: "Jun", sales: 5500 },
-];
+import { axiosInstance } from "../../axios-instance/axios-instance";
 
 const SalesTrendChart = () => {
-  const [salesData, setSalesData] = useState(initialSalesData);
+  const [salesData, setSalesData] = useState([]);
 
-  // Function to update sales data when a sale is made
-  const updateSalesData = (month, amount) => {
-    const updatedSalesData = salesData.map((data) =>
-      data.month === month
-        ? { ...data, sales: data.sales + amount } // Increase the sales for the month
-        : data
-    );
-    setSalesData(updatedSalesData); // Update the sales data state
+  const fetchSalesData = async () => {
+    try {
+      const response = await axiosInstance.get("/vendors/salespermonth/");
+      console.log("Sales data fetched successfully:", response.data);
+
+      // Ensure response data is in the correct format: [{ month: string, sales: number }, ...]
+      const data = Array.isArray(response.data)
+        ? response.data.map((item) => ({
+            month: item.month || item.name || "Unknown",
+            sales: Number(item.sales) || 0,
+          }))
+        : [];
+      setSalesData(data);
+    } catch (error) {
+      console.error("Error fetching sales data:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+      setSalesData([]); // Set empty array on error to prevent chart issues
+    }
   };
 
-  // Function to simulate making a sale in your application
-  const handleRealSaleEvent = (purchaseData) => {
-    // Assuming purchaseData contains the month and sale amount
-    const { month, amount } = purchaseData;
-
-    // Update the sales data based on the purchase
-    updateSalesData(month, amount);
-  };
-
-  // Simulate an API call or event listener for a real purchase
   useEffect(() => {
-    const simulatePurchase = () => {
-      // This could be replaced with real data from a backend API
-      const randomMonth = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"][
-        Math.floor(Math.random() * 6)
-      ];
-      const randomAmount = Math.floor(Math.random() * 2000) + 1000;
-
-      // Simulate a sale being made
-      handleRealSaleEvent({ month: randomMonth, amount: randomAmount });
-    };
-
-    // Simulate a sale every 5 seconds (this could be replaced with an actual event listener)
-    const interval = setInterval(simulatePurchase, 5000);
-
-    // Clean up the interval on component unmount
-    return () => clearInterval(interval);
-  }, [salesData]);
+    fetchSalesData();
+  }, []);
 
   return (
     <motion.div

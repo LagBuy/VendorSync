@@ -28,7 +28,7 @@ const ProductsPage = () => {
         setIsLoading(true);
         const [productsRes, lowStockRes, rateRes] = await Promise.all([
           axiosInstance.get("/products/"),
-          axiosInstance.get("/vendors/lowstockcount/?lt=10"),
+          axiosInstance.get("/vendors/lowstockcount/"),
           axios.get("https://api.exchangerate.host/latest?base=USD&symbols=NGN"),
         ]);
 
@@ -70,7 +70,7 @@ const ProductsPage = () => {
     };
 
     fetchData();
-  }, []);
+  }, [products]);
 
   const totalRevenueUSD = products.reduce(
     (sum, product) => sum + (product.price || 0) * (product.sales || 0),

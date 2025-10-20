@@ -9,7 +9,7 @@ const ConfirmSignOut = ({ onConfirm, onCancel }) => {
   const handleSignOut = async () => {
     setLoading(true);
     try {
-      await axiosInstance.post("auth/logout/");
+      await axiosInstance.post("/auth/logout/");
       Cookies.remove("jwt-token"); // Clear JWT cookie
       toast.success("Logged out successfully!");
 

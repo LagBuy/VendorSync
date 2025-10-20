@@ -13,15 +13,17 @@ const SignOutNow = ({ onLogin }) => {
   const handleLogout = () => {
     setIsLoading(true);
     try {
+      console.log("Performing client-side logout...");
       Cookies.remove("jwt-token", { path: "/" });
       onLogin(null, null);
-      navigate("/auth");
+      console.log("Logout successful: JWT cookie removed");
       toast.success("You've been successfully signed out!", {
         className: "custom-toast-success",
       });
-    } catch (e) {
-      console.error("Logout error:", {
-        message: e.message,
+      navigate("/auth");
+    } catch (error) {
+      console.error("Error during client-side logout:", {
+        message: error.message,
       });
       toast.error("Logout failed. Please try again.", {
         className: "custom-toast-error",
