@@ -41,6 +41,7 @@ axiosInstance.interceptors.response.use(
       Cookies.remove("jwt-token");
       toast.error("Session expired. Please log in again.");
       window.location.replace("/auth");
+      
     } else if (err.response?.status === 403) {
       toast.error("You do not have permission to perform this action. Please contact your administrator.");
     }

@@ -52,6 +52,7 @@ const ProductsTable = ({ setTotalProducts }) => {
     setFilteredProducts(filtered);
   }, [searchTerm, products]);
 
+  //  delete a product:
   const handleDelete = async (id) => {
     try {
       await axiosInstance.delete(`/products/${id}`);

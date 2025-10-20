@@ -19,18 +19,17 @@ const AddProductModal = ({ onCancel, onAdd }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
 
-  // Hardcoded fallback categories
   const fallbackCategories = [
-    { id: uuidv4(), name: "Electronics" },
-    { id: uuidv4(), name: "Clothing" },
-    { id: uuidv4(), name: "Books" },
-    { id: uuidv4(), name: "Home & Garden" },
-    { id: uuidv4(), name: "Toys" },
-    { id: uuidv4(), name: "Sports" },
-    { id: uuidv4(), name: "Beauty" },
-    { id: uuidv4(), name: "Jewelry" },
-    { id: uuidv4(), name: "Furniture" },
-    { id: uuidv4(), name: "Food & Beverages" },
+    { id: uuidv4(), name: "Electronics", isFallback: true },
+    { id: uuidv4(), name: "Clothing", isFallback: true },
+    { id: uuidv4(), name: "Books", isFallback: true },
+    { id: uuidv4(), name: "Home & Garden", isFallback: true },
+    { id: uuidv4(), name: "Toys", isFallback: true },
+    { id: uuidv4(), name: "Sports", isFallback: true },
+    { id: uuidv4(), name: "Beauty", isFallback: true },
+    { id: uuidv4(), name: "Jewelry", isFallback: true },
+    { id: uuidv4(), name: "Furniture", isFallback: true },
+    { id: uuidv4(), name: "Food & Beverages", isFallback: true },
   ];
 
   useEffect(() => {
@@ -39,13 +38,15 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         const token = Cookies.get("jwt-token");
         if (!token) {
           toast.error("Please log in to access categories.");
-          setCategories(fallbackCategories); // Use fallback categories
+          setCategories(fallbackCategories);
           return;
         }
 
         const { data } = await axiosInstance.get("/products/categories/");
-        if (Array.isArray(data) && data.length > 0) {
-          setCategories(data);
+        if (Array.isArray(data.data) && data.data.length > 0) {
+          setCategories(
+            data.data.map((cat) => ({ ...cat, isFallback: false }))
+          );
         } else {
           toast.warn("No categories available. Using default categories.");
           setCategories(fallbackCategories);
@@ -56,7 +57,10 @@ const AddProductModal = ({ onCancel, onAdd }) => {
           data: error.response?.data,
           message: error.message,
         });
-        toast.error(error.response?.data?.detail || "Failed to load categories. Using default categories.");
+        toast.error(
+          error.response?.data?.detail ||
+            "Failed to load categories. Using default categories."
+        );
         setCategories(fallbackCategories);
       }
     };
@@ -71,7 +75,9 @@ const AddProductModal = ({ onCancel, onAdd }) => {
 
         const { data } = await axiosInstance.get("/auth/user/");
         if (!data.roles.includes("vendor")) {
-          toast.error("You do not have vendor permissions. Please contact support.");
+          toast.error(
+            "You do not have vendor permissions. Please contact support."
+          );
           return;
         }
       } catch (error) {
@@ -98,10 +104,11 @@ const AddProductModal = ({ onCancel, onAdd }) => {
     if (file) {
       setFormData({ ...formData, images: file });
       setImagePreview(URL.createObjectURL(file));
-      setImageUrl(null); // Reset imageUrl since upload happens on submit
+      setImageUrl(null);
     } else {
       setFormData({ ...formData, images: null });
       setImagePreview(null);
+      setImageUrl(null);
     }
   };
 
@@ -111,14 +118,15 @@ const AddProductModal = ({ onCancel, onAdd }) => {
       return;
     }
 
-    // Check for duplicates (case-insensitive)
     const lowerCaseNewCategory = newCategory.trim().toLowerCase();
-    if (
-      categories.some(
-        (cat) => cat.name.toLowerCase() === lowerCaseNewCategory
-      )
-    ) {
-      toast.error("Category already exists.");
+    const existingCategory = categories.find(
+      (cat) => cat.name.toLowerCase() === lowerCaseNewCategory
+    );
+
+    if (existingCategory) {
+      setFormData({ ...formData, categories: existingCategory.name });
+      setNewCategory("");
+      toast.info(`Category "${existingCategory.name}" selected.`);
       return;
     }
 
@@ -133,8 +141,8 @@ const AddProductModal = ({ onCancel, onAdd }) => {
       const { data } = await axiosInstance.post("/products/categories/", {
         name: newCategory.trim(),
       });
-      setCategories([...categories, data]);
-      setFormData({ ...formData, categories: data.id }); // Auto-select new category
+      setCategories([...categories, { ...data, isFallback: false }]);
+      setFormData({ ...formData, categories: data.name });
       setNewCategory("");
       toast.success("Category added successfully!");
     } catch (error) {
@@ -143,9 +151,38 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         data: error.response?.data,
         message: error.message,
       });
-      toast.error(
-        error.response?.data?.detail || "Failed to add category. Please try again."
-      );
+      if (error.response?.data?.name?.includes("already exists")) {
+        try {
+          const { data } = await axiosInstance.get("/products/categories/");
+          if (Array.isArray(data.data)) {
+            const matchedCategory = data.data.find(
+              (cat) => cat.name.toLowerCase() === lowerCaseNewCategory
+            );
+            if (matchedCategory) {
+              setCategories([
+                ...categories.filter((c) => c.isFallback),
+                { ...matchedCategory, isFallback: false },
+              ]);
+              setFormData({ ...formData, categories: matchedCategory.name });
+              setNewCategory("");
+              toast.info(
+                `Category "${matchedCategory.name}" already exists and has been selected.`
+              );
+            } else {
+              toast.error(
+                "Failed to find existing category. Please try again."
+              );
+            }
+          }
+        } catch {
+          toast.error("Failed to verify category. Please try again.");
+        }
+      } else {
+        toast.error(
+          error.response?.data?.detail ||
+            "Failed to add category. Please try again."
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -155,65 +192,96 @@ const AddProductModal = ({ onCancel, onAdd }) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Validate form inputs
     if (!formData.name.trim()) {
       toast.error("Product name is required.");
       setIsLoading(false);
+      onCancel();
       return;
     }
     if (!formData.categories) {
       toast.error("Please select or add a category.");
       setIsLoading(false);
+      onCancel();
       return;
     }
     if (!formData.price || parseFloat(formData.price) <= 0) {
       toast.error("Price must be greater than 0.");
       setIsLoading(false);
+      onCancel();
       return;
     }
-    if (
-      !formData.stock_quantity ||
-      parseInt(formData.stock_quantity, 10) < 0
-    ) {
+    if (!formData.stock_quantity || parseInt(formData.stock_quantity, 10) < 0) {
       toast.error("Stock quantity cannot be negative.");
       setIsLoading(false);
+      onCancel();
       return;
     }
 
-    let finalCategoryId = formData.categories;
-
-    // Handle hardcoded category: Send to backend to get a valid ID
+    let finalCategoryName = formData.categories;
     const selectedCategory = categories.find(
-      (cat) => cat.id === formData.categories
+      (cat) => cat.name === formData.categories
     );
-    if (selectedCategory && fallbackCategories.some((fc) => fc.id === selectedCategory.id)) {
+
+    if (selectedCategory?.isFallback) {
       try {
         const token = Cookies.get("jwt-token");
         if (!token) {
           toast.error("You must be logged in to add a category.");
           setIsLoading(false);
+          onCancel();
           return;
         }
         const { data } = await axiosInstance.post("/products/categories/", {
-          name: selectedCategory.name,
+          name: finalCategoryName,
         });
-        finalCategoryId = data.id;
+        finalCategoryName = data.name;
         setCategories((prev) =>
-          prev.map((cat) => (cat.id === selectedCategory.id ? data : cat))
+          prev.map((cat) =>
+            cat.name === finalCategoryName
+              ? { ...data, isFallback: false }
+              : cat
+          )
         );
       } catch (error) {
-        console.error("Add hardcoded category error:", {
+        console.error("Create fallback category error:", {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
         });
-        toast.error("Failed to save category. Please try again.");
-        setIsLoading(false);
-        return;
+        if (error.response?.data?.name?.includes("already exists")) {
+          const { data } = await axiosInstance.get("/products/categories/");
+          if (Array.isArray(data.data)) {
+            const matchedCategory = data.data.find(
+              (cat) =>
+                cat.name.toLowerCase() === finalCategoryName.toLowerCase()
+            );
+            if (matchedCategory) {
+              finalCategoryName = matchedCategory.name;
+              setCategories((prev) =>
+                prev.map((cat) =>
+                  cat.name === finalCategoryName
+                    ? { ...matchedCategory, isFallback: false }
+                    : cat
+                )
+              );
+            } else {
+              toast.error(
+                "Failed to find existing category. Please try again."
+              );
+              setIsLoading(false);
+              onCancel();
+              return;
+            }
+          }
+        } else {
+          toast.error("Failed to create category. Please try again.");
+          setIsLoading(false);
+          onCancel();
+          return;
+        }
       }
     }
 
-    // Upload image if present
     let finalImageUrl = imageUrl;
     if (formData.images && !imageUrl) {
       try {
@@ -221,51 +289,55 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         if (!token) {
           toast.error("You must be logged in to upload an image.");
           setIsLoading(false);
+          onCancel();
           return;
         }
+
         const imageFormData = new FormData();
         imageFormData.append("image", formData.images);
-        const { data } = await axiosInstance.post(
+        const { data, status } = await axiosInstance.post(
           "/products/upload-image/",
           imageFormData,
-          {
-            headers: { "Content-Type": "multipart/form-data" },
-          }
+          { headers: { "Content-Type": "multipart/form-data" } }
         );
-        finalImageUrl = data.image_url || data.url;
-        if (!finalImageUrl) {
-          toast.error("Image upload failed. Please try again.");
-          setIsLoading(false);
-          return;
+        
+        if (status !== 201) {
+          console.warn("Image upload returned non-201 status:", status);
+          toast.warn("Image upload failed, proceeding without image.");
+        } else {
+          finalImageUrl = data.image_url || data.url;
+          if (!finalImageUrl) {
+            console.warn("No image URL returned from server.");
+            toast.warn("Image upload failed, proceeding without image.");
+          } else {
+            toast.success("Image uploaded successfully!");
+          }
         }
-        toast.success("Image uploaded successfully!");
       } catch (error) {
         console.error("Image upload error:", {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
+          request: {
+            url: "/products/upload-image/",
+            headers: { "Content-Type": "multipart/form-data" },
+            file: formData.images?.name,
+          },
         });
-        toast.error(
-          error.response?.data?.detail || "Failed to upload image. Please try again."
-        );
-        setIsLoading(false);
-        return;
+        toast.warn("Failed to upload image, proceeding without image.");
       }
     }
 
-    // Prepare form data for product submission
-    const formDataToSend = new FormData();
-    formDataToSend.append("name", formData.name);
-    formDataToSend.append("categories", finalCategoryId);
-    formDataToSend.append("price", parseFloat(formData.price) || 0);
-    formDataToSend.append(
-      "stock_quantity",
-      parseInt(formData.stock_quantity, 10) || 0
-    );
-    formDataToSend.append("description", formData.description);
-    formDataToSend.append("verified", "false");
+    const productData = {
+      name: formData.name,
+      description: formData.description,
+      price: parseFloat(formData.price) || 0,
+      stock_quantity: parseInt(formData.stock_quantity, 10) || 0,
+      verified: "false",
+      categories: [finalCategoryName],
+    };
     if (finalImageUrl) {
-      formDataToSend.append("images", finalImageUrl);
+      productData.images = [finalImageUrl];
     }
 
     try {
@@ -273,12 +345,13 @@ const AddProductModal = ({ onCancel, onAdd }) => {
       if (!token) {
         toast.error("You must be logged in to add a product.");
         setIsLoading(false);
+        onCancel();
         return;
       }
 
-      const { data } = await axiosInstance.post("/products", formDataToSend);
+      const { data } = await axiosInstance.post("/products/", productData);
       if (data) {
-        onAdd(data); // Pass new product to ProductsTable
+        onAdd(data);
         setFormData({
           name: "",
           categories: "",
@@ -290,7 +363,6 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         setImagePreview(null);
         setImageUrl(null);
         toast.success("Product added successfully!");
-        onCancel();
       } else {
         throw new Error("Invalid response from server");
       }
@@ -299,6 +371,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         status: error.response?.status,
         data: error.response?.data,
         message: error.message,
+        request: { productData },
       });
       toast.error(
         error.response?.data?.detail ||
@@ -307,6 +380,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
       );
     } finally {
       setIsLoading(false);
+      onCancel(); // Close modal after every attempt
     }
   };
 
@@ -347,7 +421,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
               >
                 <option value="">Select a category</option>
                 {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
+                  <option key={cat.id} value={cat.name}>
                     {cat.name}
                   </option>
                 ))}

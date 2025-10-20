@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { toast, ToastContainer } from "react-toastify";
-// import "react-toastify/dist/ReactToastify.css"; // im not sure if it'll work
 import { axiosInstance } from "../../axios-instance/axios-instance";
 import { CiClock2 } from "react-icons/ci";
 
@@ -122,7 +121,7 @@ export default function TimeLockWithdrawal() {
           draggable: false,
           closeButton: (
             <button
-              className="bg-blue-600 text-white px-3 py-1 rounded"
+              className="bg-yellow-500 text-black px-3 py-1 rounded-md font-medium hover:bg-yellow-600 transition-colors"
               onClick={() => handleStillUnlock()}
             >
               Unlock
@@ -177,137 +176,127 @@ export default function TimeLockWithdrawal() {
   };
 
   return (
-    <div className="bg-gray-800 bg-opacity-50 backdrop-filter backdrop-blur-lg shadow-xl rounded-xl p-6 border border-blue-700 mb-10">
+    <div className="bg-gradient-to-br from-[#111827] to-[#000000] shadow-xl rounded-xl p-6 border border-[#1F2937] mb-10 backdrop-blur-lg">
       <ToastContainer />
       <div className="flex items-center mb-6">
-        <CiClock2 className="text-blue-400 mr-4" size={28} />
+        <div className="bg-yellow-500/10 p-2 rounded-lg border border-yellow-500/20 mr-4">
+          <CiClock2 className="text-yellow-500" size={28} />
+        </div>
         <h2 className="text-2xl font-bold text-white">Lock Your Funds</h2>
       </div>
 
       <div className="space-y-6">
         {/* Lock Form */}
-        <div className="bg-gray-800 shadow-md rounded-md p-4">
+        <div className="bg-gradient-to-br from-[#111827] to-[#000000] shadow-lg rounded-lg p-6 border border-[#1F2937]">
           <p className="text-sm font-semibold mb-4 text-white">
             Lock Funds for a Specific Period
           </p>
           <div className="space-y-4">
             <input
               type="number"
-              className="w-full p-3 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter Amount"
+              className="w-full p-3 border border-[#1F2937] rounded-lg bg-black/50 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500/50 transition-colors placeholder-gray-400"
+              placeholder="Enter Amount (Minimum ₦1,000)"
               value={withdrawalAmount}
               onChange={(e) => setWithdrawalAmount(e.target.value)}
               onFocus={() => setShowDateInputs(true)}
               disabled={loading}
             />
             {showDateInputs && (
-              <>
+              <div className="space-y-4 p-4 bg-black/30 rounded-lg border border-[#1F2937]">
                 <div className="space-y-2">
-                  <label className="text-white text-sm">Lock Start Date:</label>
+                  <label className="text-white text-sm font-medium">Lock Start Date:</label>
                   <input
                     type="date"
-                    className="w-full p-3 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-3 border border-[#1F2937] rounded-lg bg-black/50 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500/50 transition-colors"
                     value={lockStartDate}
                     onChange={(e) => setLockStartDate(e.target.value)}
                     disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-white text-sm">Lock End Date:</label>
+                  <label className="text-white text-sm font-medium">Lock End Date:</label>
                   <input
                     type="date"
-                    className="w-full p-3 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-3 border border-[#1F2937] rounded-lg bg-black/50 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500/50 transition-colors"
                     value={lockEndDate}
                     onChange={(e) => setLockEndDate(e.target.value)}
                     disabled={loading}
                   />
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex space-x-3 pt-2">
                   <button
                     onClick={handleLockWithdrawal}
-                    className="flex-1 py-3 rounded-md text-white bg-blue-600 hover:bg-blue-700 transition disabled:bg-gray-600"
+                    className="flex-1 py-3 rounded-lg text-black bg-yellow-500 hover:bg-yellow-600 transition-colors disabled:bg-gray-600 disabled:text-gray-400 font-medium shadow-lg hover:shadow-yellow-500/20"
                     disabled={loading}
                   >
-                    Lock Funds
+                    {loading ? "Locking..." : "Lock Funds"}
                   </button>
                   <button
                     onClick={handleCancelLock}
-                    className="flex-1 py-3 rounded-md text-white bg-red-600 hover:bg-red-700 transition disabled:bg-gray-600"
+                    className="flex-1 py-3 rounded-lg text-white bg-[#1F2937] hover:bg-[#374151] border border-[#374151] transition-colors disabled:bg-gray-600 font-medium"
                     disabled={loading}
                   >
                     Cancel
                   </button>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
 
         {/* Locked Withdrawals */}
-        <div className="bg-gray-800 text-white shadow-md rounded-md p-4">
-          <h3 className="text-lg font-semibold mb-4">Locked Withdrawals</h3>
+        <div className="bg-gradient-to-br from-[#111827] to-[#000000] shadow-lg rounded-lg p-6 border border-[#1F2937]">
+          <h3 className="text-lg font-semibold mb-4 text-white">Locked Withdrawals</h3>
           {loading ? (
-            <div className="text-center py-6">
-              <svg
-                className="animate-spin h-8 w-8 text-white mx-auto"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8H4z"
-                />
-              </svg>
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
+              <p className="text-gray-400 mt-4">Loading locked withdrawals...</p>
             </div>
           ) : lockedWithdrawals.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm mt-4 table-auto">
+              <table className="min-w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-600 text-gray-400">
-                    <th className="py-3 px-4 text-left">Date & Time</th>
-                    <th className="py-3 px-4 text-left">Amount</th>
-                    <th className="py-3 px-4 text-left">Lock Days</th>
-                    <th className="py-3 px-4 text-left">Unlock Date</th>
-                    <th className="py-3 px-4 text-left">Status</th>
-                    <th className="py-3 px-4 text-left">Action</th>
+                  <tr className="border-b border-[#1F2937] text-gray-400">
+                    <th className="py-4 px-4 text-left font-medium">Date & Time</th>
+                    <th className="py-4 px-4 text-left font-medium">Amount</th>
+                    <th className="py-4 px-4 text-left font-medium">Lock Days</th>
+                    <th className="py-4 px-4 text-left font-medium">Unlock Date</th>
+                    <th className="py-4 px-4 text-left font-medium">Status</th>
+                    <th className="py-4 px-4 text-left font-medium">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lockedWithdrawals.map((txn) => (
                     <tr
                       key={txn.id}
-                      className="border-t border-gray-700 hover:bg-gray-700/30 transition"
+                      className="border-t border-[#1F2937] hover:bg-yellow-500/5 transition-colors group"
                     >
-                      <td className="py-3 px-4">{new Date(txn.lockDate).toLocaleString()}</td>
-                      <td className="py-3 px-4 font-semibold">
+                      <td className="py-4 px-4 text-white group-hover:text-yellow-500 transition-colors">
+                        {new Date(txn.lockDate).toLocaleString()}
+                      </td>
+                      <td className="py-4 px-4 font-semibold text-white">
                         ₦{Number(txn.amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="py-3 px-4">{txn.lockDays} days</td>
-                      <td className="py-3 px-4">{new Date(txn.unlockDate).toLocaleString()}</td>
-                      <td className="py-3 px-4">
+                      <td className="py-4 px-4 text-gray-400">{txn.lockDays} days</td>
+                      <td className="py-4 px-4 text-gray-400">
+                        {new Date(txn.unlockDate).toLocaleString()}
+                      </td>
+                      <td className="py-4 px-4">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${
                             txn.status === "Locked"
-                              ? "bg-yellow-600/20 text-yellow-400"
-                              : "bg-green-600/20 text-green-400"
+                              ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                              : "bg-green-500/20 text-green-400 border border-green-500/30"
                           }`}
                         >
                           {txn.status}
                         </span>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-4 px-4">
                         {txn.status === "Locked" && (
                           <button
                             onClick={() => handleUnlockWithdrawal(txn)}
-                            className="bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded-md text-xs disabled:bg-gray-600"
+                            className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors disabled:bg-gray-600 disabled:text-gray-400 shadow-lg hover:shadow-green-500/20"
                             disabled={loading}
                           >
                             Unlock
@@ -320,7 +309,11 @@ export default function TimeLockWithdrawal() {
               </table>
             </div>
           ) : (
-            <p className="text-gray-400">No withdrawals locked yet.</p>
+            <div className="text-center py-8 border-2 border-dashed border-[#1F2937] rounded-lg">
+              <CiClock2 className="text-gray-400 mx-auto mb-3" size={48} />
+              <p className="text-gray-400 text-lg">No withdrawals locked yet</p>
+              <p className="text-gray-500 text-sm mt-1">Lock your first withdrawal to get started</p>
+            </div>
           )}
         </div>
       </div>

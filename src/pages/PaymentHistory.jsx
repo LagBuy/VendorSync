@@ -18,13 +18,13 @@ const PaymentHistory = () => {
         <TransactionTable />
         <PaymentSchedule />
         <CreditDebitChart />
+        <NigerianBusinessIdeasAndQuotes />
       </div>
-      <div className="space-y-6">
+      <div className="space-y-4">
         <QuickStats />
         <SubscriptionPlans />
         <OfflineWithdrawal />
         <TimeLockWithdrawal />
-        <NigerianBusinessIdeasAndQuotes />
         <ExportOptions />
       </div>
     </div>

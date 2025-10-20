@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { FcIdea } from "react-icons/fc";
+
 const ideasAndQuotes = [
   "Online Estate Auction Platform",
   "Vertical Farming",
@@ -53,6 +54,7 @@ const ideasAndQuotes = [
 
 export default function NigerianBusinessIdeasAndQuotes() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -63,43 +65,82 @@ export default function NigerianBusinessIdeasAndQuotes() {
   }, []);
 
   const goToNext = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % ideasAndQuotes.length);
+    setIsAnimating(true);
+    setTimeout(() => {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % ideasAndQuotes.length);
+      setIsAnimating(false);
+    }, 300);
   };
 
   const goToPrevious = () => {
-    setCurrentIndex((prevIndex) =>
-      prevIndex === 0 ? ideasAndQuotes.length - 1 : prevIndex - 1
-    );
+    setIsAnimating(true);
+    setTimeout(() => {
+      setCurrentIndex((prevIndex) =>
+        prevIndex === 0 ? ideasAndQuotes.length - 1 : prevIndex - 1
+      );
+      setIsAnimating(false);
+    }, 300);
   };
 
   return (
-    <div className="bg-gray-800 bg-opacity-50 backdrop-filter backdrop-blur-lg shadow-xl rounded-xl p-6 border border-blue-700 mb-10">
-      <div className="flex items-center mb-6 text-center">
-        <FcIdea className="text-blue-400 mr-4" size={28} />
-        <h2 className="text-2xl font-bold text-white text-center justify-center">
-          Some Business Ideas
+    <div className="bg-gradient-to-br from-[#111827] to-[#000000] shadow-xl rounded-xl p-6 border border-[#1F2937] mb-10 backdrop-blur-lg">
+      <div className="flex items-center mb-6">
+        <div className="bg-yellow-500/10 p-2 rounded-lg border border-yellow-500/20 mr-4">
+          <FcIdea size={28} />
+        </div>
+        <h2 className="text-2xl font-bold text-white">
+          Business Ideas & Inspiration
         </h2>
       </div>
 
-      <p className="text-gray-100 text-lg italic mb-6">
-        {ideasAndQuotes[currentIndex]}
-      </p>
+      <div className="relative min-h-[80px] flex items-center justify-center">
+        <p 
+          className={`text-white text-lg italic text-center transition-all duration-300 transform ${
+            isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
+          }`}
+        >
+          {ideasAndQuotes[currentIndex]}
+        </p>
+      </div>
 
-      <div className="flex gap-8">
-        <button
-          onClick={goToPrevious}
-          className="text-3xl text-yellow-700 hover:text-yellow-900"
-          title="Previous"
-        >
-          ◀️
-        </button>
-        <button
-          onClick={goToNext}
-          className="text-3xl text-yellow-700 hover:text-yellow-900"
-          title="Next"
-        >
-          ▶️
-        </button>
+      <div className="flex justify-between items-center mt-6 pt-4 border-t border-[#1F2937]">
+        <div className="text-gray-400 text-sm">
+          {currentIndex + 1} / {ideasAndQuotes.length}
+        </div>
+        
+        <div className="flex gap-4">
+          <button
+            onClick={goToPrevious}
+            className="p-3 rounded-lg bg-[#1F2937] hover:bg-yellow-500/20 border border-[#374151] hover:border-yellow-500/50 transition-all duration-200 group"
+            title="Previous"
+          >
+            <span className="text-xl text-gray-400 group-hover:text-yellow-500 transition-colors">
+              ◀
+            </span>
+          </button>
+          
+          <button
+            onClick={goToNext}
+            className="p-3 rounded-lg bg-[#1F2937] hover:bg-yellow-500/20 border border-[#374151] hover:border-yellow-500/50 transition-all duration-200 group"
+            title="Next"
+          >
+            <span className="text-xl text-gray-400 group-hover:text-yellow-500 transition-colors">
+              ▶
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Progress indicator */}
+      <div className="mt-4">
+        <div className="w-full bg-[#1F2937] rounded-full h-1">
+          <div 
+            className="bg-yellow-500 h-1 rounded-full transition-all duration-1000 ease-linear"
+            style={{ 
+              width: `${((currentIndex + 1) / ideasAndQuotes.length) * 100}%` 
+            }}
+          ></div>
+        </div>
       </div>
     </div>
   );

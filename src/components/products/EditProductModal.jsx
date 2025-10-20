@@ -15,19 +15,23 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
   const [newCategory, setNewCategory] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState(product.image || null);
+  const [imageUrl, setImageUrl] = useState(product.image || null);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const { data } = await axiosInstance.get("/products/categories/");
-        setCategories(data || []);
+        setCategories(Array.isArray(data.data) ? data.data : data || []);
       } catch (error) {
         console.error("Fetch categories error:", {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
         });
-        toast.error(error.response?.data?.detail || "Failed to load categories. Please check your authentication or permissions.");
+        toast.error(
+          error.response?.data?.detail ||
+            "Failed to load categories. Please check your authentication or permissions."
+        );
         setCategories([]);
       }
     };
@@ -45,6 +49,11 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
     if (file) {
       setFormData({ ...formData, images: file });
       setImagePreview(URL.createObjectURL(file));
+      setImageUrl(null);
+    } else {
+      setFormData({ ...formData, images: null });
+      setImagePreview(product.image || null);
+      setImageUrl(product.image || null);
     }
   };
 
@@ -54,10 +63,25 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
       return;
     }
 
+    const lowerCaseNewCategory = newCategory.trim().toLowerCase();
+    const existingCategory = categories.find(
+      (cat) => cat.name.toLowerCase() === lowerCaseNewCategory
+    );
+
+    if (existingCategory) {
+      setFormData({ ...formData, categories: existingCategory.name });
+      setNewCategory("");
+      toast.info(`Category "${existingCategory.name}" selected.`);
+      return;
+    }
+
     try {
-      const { data } = await axiosInstance.post("/products/categories/", { name: newCategory });
+      setIsLoading(true);
+      const { data } = await axiosInstance.post("/products/categories/", {
+        name: newCategory.trim(),
+      });
       setCategories([...categories, data]);
-      setFormData({ ...formData, categories: data.id });
+      setFormData({ ...formData, categories: data.name });
       setNewCategory("");
       toast.success("Category added successfully!");
     } catch (error) {
@@ -66,7 +90,12 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
         data: error.response?.data,
         message: error.message,
       });
-      toast.error(error.response?.data?.detail || "Failed to add category. Please check your permissions.");
+      toast.error(
+        error.response?.data?.detail ||
+          "Failed to add category. Please check your permissions."
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -74,19 +103,85 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const formDataToSend = new FormData();
-    formDataToSend.append("name", formData.name);
-    formDataToSend.append("categories", formData.categories);
-    formDataToSend.append("price", parseFloat(formData.price) || 0);
-    formDataToSend.append("stock_quantity", parseInt(formData.stock_quantity, 10) || 0);
-    formDataToSend.append("description", formData.description);
-    formDataToSend.append("verified", product.verified || "false");
-    if (formData.images) {
-      formDataToSend.append("images", formData.images);
+    if (!formData.name.trim()) {
+      toast.error("Product name is required.");
+      setIsLoading(false);
+      onCancel();
+      return;
+    }
+    if (!formData.categories) {
+      toast.error("Please select or add a category.");
+      setIsLoading(false);
+      onCancel();
+      return;
+    }
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      toast.error("Price must be greater than 0.");
+      setIsLoading(false);
+      onCancel();
+      return;
+    }
+    if (!formData.stock_quantity || parseInt(formData.stock_quantity, 10) < 0) {
+      toast.error("Stock quantity cannot be negative.");
+      setIsLoading(false);
+      onCancel();
+      return;
+    }
+
+    let finalImageUrl = imageUrl;
+    if (formData.images && !imageUrl) {
+      try {
+        const imageFormData = new FormData();
+        imageFormData.append("image", formData.images);
+        const { data, status } = await axiosInstance.post(
+          "/products/upload-image/",
+          imageFormData,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+        if (status !== 201) {
+          console.warn("Image upload returned non-201 status:", status);
+          toast.warn("Image upload failed, proceeding with existing image.");
+        } else {
+          finalImageUrl = data.image_url || data.url;
+          if (!finalImageUrl) {
+            console.warn("No image URL returned from server.");
+            toast.warn("Image upload failed, proceeding with existing image.");
+          } else {
+            toast.success("Image uploaded successfully!");
+          }
+        }
+      } catch (error) {
+        console.error("Image upload error:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+          request: {
+            url: "/products/upload-image/",
+            headers: { "Content-Type": "multipart/form-data" },
+            file: formData.images?.name,
+          },
+        });
+        toast.warn("Failed to upload image, proceeding with existing image.");
+      }
+    }
+
+    const productData = {
+      name: formData.name,
+      description: formData.description,
+      price: parseFloat(formData.price) || 0,
+      stock_quantity: parseInt(formData.stock_quantity, 10) || 0,
+      verified: product.verified || "false",
+      categories: [formData.categories],
+    };
+    if (finalImageUrl) {
+      productData.images = [finalImageUrl];
     }
 
     try {
-      const { data } = await axiosInstance.patch(`/products/${product.id}/`, formDataToSend);
+      const { data } = await axiosInstance.patch(
+        `/products/${product.id}/`,
+        productData
+      );
       if (data) {
         onSave(data);
         toast.success("Product updated successfully!");
@@ -98,25 +193,35 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
         status: error.response?.status,
         data: error.response?.data,
         message: error.message,
+        request: { productData },
       });
       toast.error(
         error.response?.data?.detail ||
-        Object.values(error.response?.data || {}).join(" ") ||
-        "Failed to update product. Please check your input and permissions."
+          Object.values(error.response?.data || {}).join(" ") ||
+          "Failed to update product. Please check your input and permissions."
       );
     } finally {
       setIsLoading(false);
+      onCancel(); // Close modal after every attempt
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[100] overflow-auto pt-4">
       <div className="bg-gray-800 rounded-lg p-4 md:p-6 w-full max-w-md mx-4 my-4 md:mx-auto min-h-[80vh]">
-        <h2 className="text-xl md:text-2xl font-semibold text-gray-100 mb-4 text-center">Edit Product</h2>
+        <h2 className="text-xl md:text-2xl font-semibold text-gray-100 mb-4 text-center">
+          Edit Product
+        </h2>
         <div className="overflow-y-auto">
-          <form onSubmit={handleSubmit} id="edit-product-form" className="space-y-4 p-2">
+          <form
+            onSubmit={handleSubmit}
+            id="edit-product-form"
+            className="space-y-4 p-2"
+          >
             <div className="mb-4">
-              <label className="block text-gray-300 mb-1 text-sm md:text-base">Name</label>
+              <label className="block text-gray-300 mb-1 text-sm md:text-base">
+                Name
+              </label>
               <input
                 type="text"
                 name="name"
@@ -127,7 +232,9 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-gray-300 mb-1 text-sm md:text-base">Category</label>
+              <label className="block text-gray-300 mb-1 text-sm md:text-base">
+                Category
+              </label>
               <select
                 name="categories"
                 value={formData.categories}
@@ -135,9 +242,15 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
                 className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 md:px-4 md:py-2 text-sm md:text-base"
               >
                 <option value="">Select a category</option>
-                {Array.isArray(categories) ? categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                )) : <option disabled>No categories available</option>}
+                {Array.isArray(categories) ? (
+                  categories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>No categories available</option>
+                )}
               </select>
               <div className="mt-2 flex flex-col md:flex-row gap-2">
                 <input
@@ -158,7 +271,9 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
               </div>
             </div>
             <div className="mb-4">
-              <label className="block text-gray-300 mb-1 text-sm md:text-base">Price</label>
+              <label className="block text-gray-300 mb-1 text-sm md:text-base">
+                Price
+              </label>
               <input
                 type="number"
                 name="price"
@@ -171,7 +286,9 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-gray-300 mb-1 text-sm md:text-base">Stock Quantity</label>
+              <label className="block text-gray-300 mb-1 text-sm md:text-base">
+                Stock Quantity
+              </label>
               <input
                 type="number"
                 name="stock_quantity"
@@ -183,7 +300,9 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-gray-300 mb-1 text-sm md:text-base">Description</label>
+              <label className="block text-gray-300 mb-1 text-sm md:text-base">
+                Description
+              </label>
               <textarea
                 name="description"
                 value={formData.description}
@@ -192,7 +311,9 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-gray-300 mb-1 text-sm md:text-base">Image</label>
+              <label className="block text-gray-300 mb-1 text-sm md:text-base">
+                Image
+              </label>
               <input
                 type="file"
                 accept="image/*"
@@ -201,7 +322,11 @@ const EditProductModal = ({ product, onCancel, onSave }) => {
               />
               {imagePreview && (
                 <div className="mt-2">
-                  <img src={imagePreview} alt="Product Preview" className="max-w-full h-auto rounded-lg" />
+                  <img
+                    src={imagePreview}
+                    alt="Product Preview"
+                    className="max-w-full h-auto rounded-lg"
+                  />
                 </div>
               )}
             </div>

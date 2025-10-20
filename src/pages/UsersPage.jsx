@@ -60,6 +60,7 @@ const UsersPage = () => {
         calculateCustomerStats(data);
         toast.success("Customer data loaded successfully!", {
           position: "top-center",
+          autoClose: 3000,
         });
       } catch (error) {
         console.error("Error fetching customers:", {
@@ -67,10 +68,12 @@ const UsersPage = () => {
           data: error.response?.data,
           message: error.message,
         });
-        toast.error(
-          error.response?.data?.message || "Failed to load customer data.",
-          { position: "top-center" }
-        );
+        
+        const errorMessage = error.response?.data?.message || "Failed to load customer data.";
+        toast.error(errorMessage, { 
+          position: "top-center",
+          autoClose: 3000,
+        });
       } finally {
         setLoading(false);
       }
@@ -80,62 +83,118 @@ const UsersPage = () => {
   }, []);
 
   return (
-    <div className="flex-1 overflow-auto relative z-10">
+    <div className="flex-1 overflow-auto relative z-10 bg-gradient-to-br from-[#111827] to-[#000000] min-h-screen">
       <Header title="Customers" />
-      <ToastContainer />
+      <ToastContainer 
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+        style={{
+          fontSize: '14px',
+        }}
+      />
 
       <main className="max-w-7xl mx-auto py-6 px-4 lg:px-8">
         {/* STATS */}
         <motion.div
-          className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8"
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
+          transition={{ duration: 0.6 }}
         >
           {loading ? (
-            <div className="col-span-4 text-center text-white">Loading...</div>
+            // Loading skeleton
+            Array.from({ length: 4 }).map((_, index) => (
+              <div 
+                key={index}
+                className="bg-gradient-to-br from-[#111827] to-[#000000] rounded-xl p-6 border border-[#1F2937] animate-pulse"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <div className="h-4 bg-[#1F2937] rounded w-20"></div>
+                    <div className="h-6 bg-[#1F2937] rounded w-16"></div>
+                  </div>
+                  <div className="h-10 w-10 bg-[#1F2937] rounded-lg"></div>
+                </div>
+              </div>
+            ))
           ) : (
             <>
               <StatCard
                 name="Total Customers"
                 icon={UsersIcon}
                 value={totalCustomers.toLocaleString()}
-                color="#6366F1"
+                color="#EAB308"
+                trend={{ value: 12.5, isPositive: true }}
               />
               <StatCard
                 name="New Customers Today"
                 icon={UserPlus}
                 value={newCustomersToday}
-                color="#10B981"
+                color="#22C55E"
+                trend={{ value: 8.2, isPositive: true }}
               />
               <StatCard
                 name="Active Customers"
                 icon={UserCheck}
                 value={activeCustomers.toLocaleString()}
-                color="#F59E0B"
+                color="#EAB308"
+                trend={{ value: 5.7, isPositive: true }}
               />
               <StatCard
                 name="Lost Customers"
                 icon={UserX}
                 value={lostCustomers}
                 color="#EF4444"
+                trend={{ value: 2.1, isPositive: false }}
               />
             </>
           )}
         </motion.div>
 
-        {loading ? (
-          <div className="text-center text-white">Loading customers...</div>
-        ) : (
-          <UsersTable customers={customers} />
-        )}
+        {/* USER TABLE */}
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          {loading ? (
+            <div className="bg-gradient-to-br from-[#111827] to-[#000000] rounded-xl p-6 border border-[#1F2937] text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+              <p className="text-gray-400">Loading customer data...</p>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-br from-[#111827] to-[#000000] rounded-xl border border-[#1F2937] shadow-lg overflow-hidden">
+              <UsersTable customers={customers} />
+            </div>
+          )}
+        </motion.div>
 
         {/* USER CHARTS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-          <UserGrowthChart />
-          <UserActivityHeatmap />
-          <UserDemographicsChart />
-        </div>
+        <motion.div
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
+          <div className="bg-gradient-to-br from-[#111827] to-[#000000] rounded-xl p-6 border border-[#1F2937] shadow-lg">
+            <UserGrowthChart />
+          </div>
+          <div className="bg-gradient-to-br from-[#111827] to-[#000000] rounded-xl p-6 border border-[#1F2937] shadow-lg">
+            <UserActivityHeatmap />
+          </div>
+          <div className="lg:col-span-2 bg-gradient-to-br from-[#111827] to-[#000000] rounded-xl p-6 border border-[#1F2937] shadow-lg">
+            <UserDemographicsChart />
+          </div>
+        </motion.div>
       </main>
     </div>
   );

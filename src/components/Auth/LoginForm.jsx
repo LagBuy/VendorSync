@@ -36,7 +36,7 @@ const LoginForm = ({ onSwitch, onLogin }) => {
       const { data } = await axiosInstance.post("/auth/login/", reqBody);
       const { user, access } = data;
       
-       console.log(access);
+      console.log(access);
 
       Cookies.set("jwt-token", access, { expires: 7 });
 
@@ -56,18 +56,28 @@ const LoginForm = ({ onSwitch, onLogin }) => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-[#1A362B] p-8 rounded-xl shadow-lg text-white">
-      <h2 className="text-2xl font-semibold mb-6 text-center text-[#F7E4A8]">
+    <div className="w-full max-w-md mx-auto p-8 rounded-lg shadow-lg" 
+         style={{ 
+           backgroundColor: 'rgba(255, 255, 255, 1)',
+           border: '2px solid rgba(252, 230, 0, 1)'
+         }}>
+      <h2 className="text-2xl font-bold mb-6 text-center" 
+          style={{ color: 'rgba(17, 36, 29, 1)' }}>
         Welcome Back ✨
       </h2>
       {error && (
-        <div className="text-[#F7E4A8] bg-red-500/20 border border-red-500 text-sm mb-4 text-center p-2 rounded">
+        <div className="text-red-500 text-sm mb-4 text-center p-3 rounded-md" 
+             style={{ 
+               backgroundColor: 'rgba(255, 249, 183, 0.3)',
+               border: '1px solid rgba(252, 230, 0, 1)'
+             }}>
           {error}
         </div>
       )}
       <form onSubmit={handleLogin} className="space-y-4">
         <div>
-          <label className="block mb-1 text-sm font-medium text-white">
+          <label className="block mb-2 text-sm font-medium" 
+                 style={{ color: 'rgba(17, 36, 29, 1)' }}>
             Email
           </label>
           <input
@@ -75,12 +85,18 @@ const LoginForm = ({ onSwitch, onLogin }) => {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F7E4A8] placeholder-white/50"
+            className="w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 transition-colors duration-200"
+            style={{ 
+              borderColor: 'rgba(165, 244, 213, 1)',
+              backgroundColor: 'rgba(255, 255, 255, 1)',
+              color: 'rgba(17, 36, 29, 1)'
+            }}
             placeholder="Enter your email"
           />
         </div>
         <div>
-          <label className="block mb-1 text-sm font-medium text-white">
+          <label className="block mb-2 text-sm font-medium" 
+                 style={{ color: 'rgba(17, 36, 29, 1)' }}>
             Password
           </label>
           <div className="relative">
@@ -89,12 +105,18 @@ const LoginForm = ({ onSwitch, onLogin }) => {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f2d062] placeholder-white/50"
+              className="w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 transition-colors duration-200 pr-10"
+              style={{ 
+                borderColor: 'rgba(165, 244, 213, 1)',
+                backgroundColor: 'rgba(255, 255, 255, 1)',
+                color: 'rgba(17, 36, 29, 1)'
+              }}
               placeholder="Enter your password"
             />
             <span
               onClick={() => setPasswordVisible(!passwordVisible)}
-              className="absolute right-3 top-3 cursor-pointer text-white/70 hover:text-[#fde080]"
+              className="absolute right-3 top-3 cursor-pointer"
+              style={{ color: 'rgba(26, 54, 43, 1)' }}
             >
               {passwordVisible ? <FaEyeSlash /> : <FaEye />}
             </span>
@@ -105,32 +127,45 @@ const LoginForm = ({ onSwitch, onLogin }) => {
             type="checkbox"
             checked={rememberMe}
             onChange={() => setRememberMe(!rememberMe)}
-            className="h-4 w-4 text-[#fada71] focus:ring-[#ffdc6b] border-white/20 rounded bg-white/10"
+            className="h-4 w-4 rounded focus:ring-2 transition-colors duration-200"
+            style={{ 
+              borderColor: 'rgba(165, 244, 213, 1)',
+              backgroundColor: rememberMe ? 'rgba(26, 54, 43, 1)' : 'rgba(255, 255, 255, 1)',
+              focusRingColor: 'rgba(252, 230, 0, 1)'
+            }}
           />
-          <label className="text-sm text-white/80">Remember Me</label>
+          <label className="text-sm" style={{ color: 'rgba(17, 36, 29, 0.8)' }}>
+            Remember Me
+          </label>
         </div>
         <button
           type="submit"
-          className="w-full bg-[#fdd140] hover:bg-[#F7E4A8]/80 text-[#1A362B] font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-md"
+          className="w-full font-bold py-3 px-4 rounded-md transition duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ 
+            backgroundColor: 'rgba(26, 54, 43, 1)',
+            color: 'rgba(255, 255, 255, 1)'
+          }}
         >
           Log In
         </button>
       </form>
-      <div className="text-sm mt-4 text-center text-white/80">
-        <p>
+      <div className="text-sm mt-6 text-center" style={{ color: 'rgba(17, 36, 29, 0.8)' }}>
+        <p className="mb-3">
           Forgot your password?{" "}
           <button
             onClick={() => onSwitch("forgot")}
-            className="text-[#F7E4A8] hover:underline"
+            className="font-semibold hover:underline transition-colors duration-200"
+            style={{ color: 'rgba(26, 54, 43, 1)' }}
           >
             Reset here
           </button>
         </p>
-        <p className="mt-2">
+        <p>
           Don't have an account?{" "}
           <button
             onClick={() => onSwitch("signup")}
-            className="text-[#F7E4A8] hover:underline"
+            className="font-semibold hover:underline transition-colors duration-200"
+            style={{ color: 'rgba(26, 54, 43, 1)' }}
           >
             Sign up
           </button>
