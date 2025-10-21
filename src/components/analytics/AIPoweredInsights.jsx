@@ -5,10 +5,11 @@ import {
   Users,
   ShoppingBag,
   DollarSign,
-  Loader2,
+  Brain,
+  Sparkles,
+  Target,
+  Zap,
 } from "lucide-react";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { axiosInstance } from "../../axios-instance/axios-instance";
 
 const ICONS = {
@@ -16,6 +17,10 @@ const ICONS = {
   users: Users,
   shopping: ShoppingBag,
   dollar: DollarSign,
+  brain: Brain,
+  sparkles: Sparkles,
+  target: Target,
+  zap: Zap,
 };
 
 const AIPoweredInsights = () => {
@@ -26,21 +31,10 @@ const AIPoweredInsights = () => {
     const fetchInsights = async () => {
       setLoading(true);
       try {
-
-        // please, follow this endpoint naming style.
         const { data } = await axiosInstance.get("/insights/");
         setInsights(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Error fetching insights:", {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message,
-        });
+      } catch {
         setInsights([]);
-        toast.error(
-          error.response?.data?.message ||
-            "We can't load your business' insights at the moment. Please check your internet connection and try again. If this issue persists, contact customer service (see settings)."
-        );
       } finally {
         setLoading(false);
       }
@@ -51,51 +45,128 @@ const AIPoweredInsights = () => {
 
   return (
     <motion.div
-      className="bg-gray-800 bg-opacity-50 backdrop-filter backdrop-blur-lg shadow-lg rounded-xl p-6 border border-gray-700"
-      initial={{ opacity: 0, y: 20 }}
+      className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl p-8 border-2 border-green-400/50 backdrop-blur-sm relative overflow-hidden"
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 1.0 }}
+      transition={{ duration: 0.6 }}
     >
-      <h2 className="text-xl font-semibold text-gray-100 mb-4">
-        Your Business' Insights
-      </h2>
+      {/* Animated Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-yellow-400"></div>
+      <div className="absolute -top-20 -right-20 w-40 h-40 bg-green-500 rounded-full opacity-5 blur-xl"></div>
+      <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-yellow-500 rounded-full opacity-5 blur-xl"></div>
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 relative z-10">
+        <div className="flex items-center">
+          <Brain className="mr-3 text-yellow-500" size={28} />
+          <div>
+            <h2 className="text-2xl font-bold text-white">
+              AI Business Insights
+            </h2>
+            <p className="text-gray-400 text-sm">
+              Smart analytics and recommendations
+            </p>
+          </div>
+        </div>
+        {!loading && insights.length > 0 && (
+          <div className="flex items-center text-green-500 text-sm">
+            <Sparkles size={16} className="mr-1" />
+            <span>Live AI</span>
+          </div>
+        )}
+      </div>
 
       {loading ? (
-        <div className="flex justify-center py-10">
-          <Loader2 className="animate-spin text-purple-500 size-8" />
+        <div className="flex flex-col items-center justify-center py-12">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full mb-4"
+          />
+          <p className="text-gray-400">AI is analyzing your business data...</p>
         </div>
       ) : insights.length === 0 ? (
-        <div className="text-center text-red-400 font-medium">
-          No insights available at the moment. Please try again later.
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="w-20 h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mb-4">
+            <Brain className="text-yellow-500" size={32} />
+          </div>
+          <h3 className="text-white font-semibold text-xl mb-2">
+            No Insights Available
+          </h3>
+          <p className="text-gray-400 max-w-sm">
+            AI insights will appear here once we gather enough data about your
+            business performance.
+          </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 relative z-10">
           {insights.map((item, index) => {
             const Icon = ICONS[item.icon] || TrendingUp;
+            const color = item.color || "#EAB308";
+
             return (
-              <div key={index} className="flex items-center space-x-3">
-                <div
-                  className={`p-2 rounded-full ${
-                    item.color || "text-gray-400"
-                  } bg-opacity-20`}
-                >
-                  <Icon
-                    className={`size-6 ${item.color || "text-gray-400"}`}
-                  />
+              <motion.div
+                key={index}
+                className="bg-gradient-to-r from-gray-800/50 to-gray-900/50 rounded-2xl p-4 border border-gray-700 hover:border-yellow-500/30 transition-all duration-300 group"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ scale: 1.02 }}
+              >
+                <div className="flex items-start space-x-4">
+                  <div
+                    className="p-3 rounded-xl bg-gradient-to-br from-yellow-500/20 to-green-500/20 border border-yellow-500/30 group-hover:scale-110 transition-transform duration-300"
+                    style={{ borderColor: color + "30" }}
+                  >
+                    <Icon className="size-6" style={{ color: color }} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white text-sm leading-relaxed">
+                      {item.insight}
+                    </p>
+                    {item.action && (
+                      <div className="mt-2 flex items-center text-green-400 text-xs">
+                        <Target size={12} className="mr-1" />
+                        <span>Recommended Action</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <p className="text-gray-300">{item.insight}</p>
-              </div>
+
+                {/* Insight type indicator */}
+                <div className="mt-3 pt-3 border-t border-gray-700 flex items-center justify-between">
+                  <span className="text-gray-500 text-xs">
+                    AI Analysis • {new Date().toLocaleDateString()}
+                  </span>
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-1 h-1 bg-yellow-500 rounded-full"
+                      />
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
             );
           })}
         </div>
       )}
 
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop
-      />
+      {/* Footer */}
+      {!loading && insights.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="mt-6 pt-6 border-t border-gray-800 text-center"
+        >
+          <div className="flex items-center justify-center text-gray-400 text-sm">
+            <Zap size={14} className="mr-2 text-yellow-500" />
+            <span>AI insights update every 24 hours</span>
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 };

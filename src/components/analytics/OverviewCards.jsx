@@ -4,29 +4,12 @@ import {
   Users,
   ShoppingBag,
   Eye,
-  ArrowDownRight,
-  ArrowUpRight,
+  TrendingUp,
+  TrendingDown,
+  Sparkles,
+  DollarSign,
 } from "lucide-react";
-import { toast } from "react-toastify";
 import { axiosInstance } from "../../axios-instance/axios-instance";
-
-// Custom Naira SVG icon
-const NairaIcon = ({ className = "size-6" }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M6 18V6m0 6h12M18 6v12M6 6l12 12M6 18l12-12"
-    />
-  </svg>
-);
 
 const OverviewCards = () => {
   const [data, setData] = useState({
@@ -40,13 +23,14 @@ const OverviewCards = () => {
     viewChange: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
 
   useEffect(() => {
     const fetchOverviewData = async () => {
       setIsLoading(true);
       try {
-        const { data: result } = await axiosInstance.get("/dashboard-overview/");
+        const { data: result } = await axiosInstance.get(
+          "/dashboard-overview/"
+        );
         setData({
           revenue: result.revenue || 0,
           revenueChange: result.revenueChange || 0,
@@ -57,15 +41,8 @@ const OverviewCards = () => {
           views: result.views || 0,
           viewChange: result.viewChange || 0,
         });
-        setError(false);
-      } catch (error) {
-        console.error("Failed to fetch overview data:", {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message,
-        });
-        setError(true);
-        toast.error(error.response?.data?.message || "Failed to load overview data.");
+      } catch {
+        // Error handling without error messages
       } finally {
         setIsLoading(false);
       }
@@ -76,94 +53,128 @@ const OverviewCards = () => {
 
   const overviewData = [
     {
-      name: "Revenue",
-      value: isLoading || error
+      name: "Total Revenue",
+      value: isLoading
         ? "₦0.00"
         : `₦${data.revenue.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })}`,
       change: data.revenueChange,
-      icon: NairaIcon,
+      icon: DollarSign,
+      color: "#EAB308",
+      gradient: "from-yellow-500/10 to-yellow-600/10",
+      border: "border-yellow-500/30",
     },
     {
       name: "Customers",
-      value: isLoading || error ? "0" : data.customers.toLocaleString(),
+      value: isLoading ? "0" : data.customers.toLocaleString(),
       change: data.customerChange,
       icon: Users,
+      color: "#22C55E",
+      gradient: "from-green-500/10 to-green-600/10",
+      border: "border-green-500/30",
     },
     {
-      name: "Orders",
-      value: isLoading || error ? "0" : data.orders.toLocaleString(),
+      name: "Total Orders",
+      value: isLoading ? "0" : data.orders.toLocaleString(),
       change: data.orderChange,
       icon: ShoppingBag,
+      color: "#EAB308",
+      gradient: "from-yellow-500/10 to-yellow-600/10",
+      border: "border-yellow-500/30",
     },
     {
       name: "Page Views",
-      value: isLoading || error ? "0" : data.views.toLocaleString(),
+      value: isLoading ? "0" : data.views.toLocaleString(),
       change: data.viewChange,
       icon: Eye,
+      color: "#22C55E",
+      gradient: "from-green-500/10 to-green-600/10",
+      border: "border-green-500/30",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
       {overviewData.map((item, index) => (
         <motion.div
           key={item.name}
-          className="bg-[#1A362B] bg-opacity-50 backdrop-filter backdrop-blur-lg shadow-lg rounded-xl p-6 border border-gray-700"
-          initial={{ opacity: 0, y: 20 }}
+          className={`bg-gradient-to-br from-gray-900 to-black rounded-3xl p-6 border-2 ${
+            item.border
+          } shadow-2xl backdrop-blur-sm hover:shadow-${item.color
+            .split("#")[1]
+            .toLowerCase()}/20 transition-all duration-500 group`}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
+          transition={{
+            delay: index * 0.1,
+            duration: 0.6,
+            ease: "easeOut",
+          }}
+          whileHover={{
+            scale: 1.02,
+            y: -5,
+          }}
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-medium text-[#FFF9B0]">{item.name}</h3>
-              <p className="mt-1 text-xl font-semibold text-[#FFF9B0]">
-                {isLoading ? (
-                  <span className="animate-pulse">Loading...</span>
-                ) : error ? (
-                  "N/A"
-                ) : (
-                  item.value
-                )}
-              </p>
-            </div>
-
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
             <div
-              className={`p-3 rounded-full bg-opacity-20 ${
-                item.change >= 0 ? "bg-[#2E7D32]" : "bg-[#D32F2F]"
-              }`}
+              className={`p-3 rounded-2xl bg-gradient-to-br ${item.gradient} border ${item.border}`}
             >
-              <item.icon
-                className={`size-6 ${
-                  item.change >= 0 ? "text-[#2E7D32]" : "text-[#D32F2F]"
-                }`}
-              />
+              <item.icon className={`size-6`} style={{ color: item.color }} />
             </div>
-          </div>
-
-          <div
-            className={`mt-4 flex items-center ${
-              item.change >= 0 ? "text-[#2E7D32]" : "text-[#D32F2F]"
-            }`}
-          >
-            {isLoading || error ? (
-              <span className="text-sm text-[#FFF9B0]">N/A</span>
-            ) : (
-              <>
+            {!isLoading && (
+              <div
+                className={`flex items-center text-sm font-semibold ${
+                  item.change >= 0 ? "text-green-400" : "text-red-400"
+                }`}
+              >
                 {item.change >= 0 ? (
-                  <ArrowUpRight size="20" />
+                  <TrendingUp size={16} className="mr-1" />
                 ) : (
-                  <ArrowDownRight size="20" />
+                  <TrendingDown size={16} className="mr-1" />
                 )}
-                <span className="ml-1 text-sm font-medium">
-                  {Math.abs(item.change)}%
-                </span>
-                <span className="ml-2 text-sm text-[#FFF9B0]">vs last period</span>
-              </>
+                <span>{Math.abs(item.change)}%</span>
+              </div>
             )}
           </div>
+
+          {/* Content */}
+          <div className="space-y-2">
+            <h3 className="text-gray-400 text-sm font-medium uppercase tracking-wide">
+              {item.name}
+            </h3>
+            <p className="text-2xl lg:text-3xl font-bold text-white">
+              {isLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-6 h-6 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-gray-400">Loading...</span>
+                </div>
+              ) : (
+                <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                  {item.value}
+                </span>
+              )}
+            </p>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-4 pt-4 border-t border-gray-800">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-500 text-xs">
+                {item.change >= 0 ? "Increased" : "Decreased"} this period
+              </span>
+              {!isLoading && item.change >= 0 && (
+                <Sparkles size={14} className="text-yellow-500" />
+              )}
+            </div>
+          </div>
+
+          {/* Animated Background Effect */}
+          <div
+            className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10 blur-xl`}
+          ></div>
         </motion.div>
       ))}
     </div>

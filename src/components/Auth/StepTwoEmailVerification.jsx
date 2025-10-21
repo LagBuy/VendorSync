@@ -2,12 +2,19 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useSearchParams } from "react-router-dom";
 import { axiosInstance } from "../../axios-instance/axios-instance";
+import {
+  FaEnvelope,
+  FaCheckCircle,
+  FaRedo,
+  FaArrowRight,
+} from "react-icons/fa";
 
 const EmailVerification = ({ onSwitch, email = "", handleProceed }) => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
     const verifyEmail = async () => {
@@ -15,10 +22,9 @@ const EmailVerification = ({ onSwitch, email = "", handleProceed }) => {
         setIsLoading(true);
         try {
           console.log("Verifying email with token:", token);
-          await axiosInstance.get(
-            `/auth/signup/verify-email/?token=${token}`
-          );
+          await axiosInstance.get(`/auth/signup/verify-email/?token=${token}`);
           console.log("Email verification successful");
+          setIsVerified(true);
           toast.success(`Email ${email || "N/A"} verified successfully!`, {
             className: "custom-toast-success",
           });
@@ -81,52 +87,156 @@ const EmailVerification = ({ onSwitch, email = "", handleProceed }) => {
 
   return (
     <div
-      className="w-full max-w-md mx-auto p-8 rounded-lg shadow-lg"
+      className="w-full max-w-md mx-auto p-8 rounded-2xl shadow-xl backdrop-blur-sm relative overflow-hidden"
       style={{
-        backgroundColor: "rgba(255, 255, 255, 1)",
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
         border: "2px solid rgba(252, 230, 0, 1)",
+        backgroundImage:
+          "linear-gradient(135deg, rgba(252, 230, 0, 0.05) 0%, rgba(165, 244, 213, 0.05) 100%)",
       }}
     >
-      <h2
-        className="text-2xl font-bold mb-6 text-center"
-        style={{ color: "rgba(17, 36, 29, 1)" }}
-      >
-        {token ? "Email Verification" : "Check Your Email"}
-      </h2>
-      <div className="text-center space-y-4">
-        <p className="text-lg" style={{ color: "rgba(17, 36, 29, 0.8)" }}>
+      {/* Decorative Background Elements */}
+      <div
+        className="absolute top-0 right-0 w-28 h-28 -translate-y-14 translate-x-14 rounded-full opacity-10"
+        style={{ backgroundColor: "rgba(252, 230, 0, 1)" }}
+      ></div>
+      <div
+        className="absolute bottom-0 left-0 w-20 h-20 -translate-x-10 translate-y-10 rounded-full opacity-10"
+        style={{ backgroundColor: "rgba(165, 244, 213, 1)" }}
+      ></div>
+
+      {/* Header */}
+      <div className="text-center mb-8 relative z-10">
+        <div
+          className={`w-24 h-24 mx-auto mb-4 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 ${
+            isVerified ? "scale-110" : ""
+          }`}
+          style={{
+            backgroundColor: isVerified
+              ? "rgba(165, 244, 213, 0.2)"
+              : "rgba(252, 230, 0, 0.15)",
+            border: `2px solid ${
+              isVerified ? "rgba(165, 244, 213, 0.8)" : "rgba(252, 230, 0, 0.5)"
+            }`,
+          }}
+        >
+          {isVerified ? (
+            <FaCheckCircle
+              className="text-4xl"
+              style={{ color: "rgba(26, 54, 43, 1)" }}
+            />
+          ) : (
+            <FaEnvelope
+              className="text-4xl"
+              style={{ color: "rgba(26, 54, 43, 1)" }}
+            />
+          )}
+        </div>
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-green-900 to-black bg-clip-text text-transparent mb-2">
           {token
-            ? `Verifying your email ${email || ""}...`
-            : `A verification email has been sent to ${
-                email || ""
-              }. Please check your inbox (and spam/junk folder) and click the verification link to continue.`}
+            ? isVerified
+              ? "Email Verified!"
+              : "Verifying Email"
+            : "Check Your Email"}
+        </h2>
+        <p className="text-sm mt-2" style={{ color: "rgba(17, 36, 29, 0.7)" }}>
+          {token
+            ? isVerified
+              ? "Your email has been successfully verified!"
+              : `Verifying ${email || "your email"}...`
+            : "We've sent a verification link to your email"}
         </p>
-        {error && <p className="text-[#D32F2F] text-sm">{error}</p>}
-        {!token && (
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div
+          className="mb-6 p-4 rounded-xl text-center text-sm font-medium relative z-10"
+          style={{
+            backgroundColor: "rgba(255, 249, 183, 0.3)",
+            border: "1px solid rgba(252, 230, 0, 0.5)",
+            color: "rgba(17, 36, 29, 1)",
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="text-center space-y-6 relative z-10">
+        <div
+          className="p-4 rounded-xl"
+          style={{
+            backgroundColor: "rgba(255, 255, 255, 0.6)",
+            border: "1px solid rgba(165, 244, 213, 0.5)",
+          }}
+        >
+          <p
+            className="text-lg leading-relaxed"
+            style={{ color: "rgba(17, 36, 29, 0.9)" }}
+          >
+            {token
+              ? `We're verifying your email address ${
+                  email ? `(${email})` : ""
+                }. Please wait a moment...`
+              : `A verification email has been sent to ${
+                  email || "your email address"
+                }. Please check your inbox (and spam/junk folder) and click the verification link to continue.`}
+          </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="space-y-4">
+          {!token && (
+            <button
+              onClick={handleResendEmail}
+              className="w-full py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-3 group"
+              style={{
+                backgroundColor: "rgba(252, 230, 0, 0.1)",
+                border: "2px solid rgba(252, 230, 0, 1)",
+                color: "rgba(17, 36, 29, 1)",
+              }}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  <span>Resending...</span>
+                </>
+              ) : (
+                <>
+                  <FaRedo className="group-hover:rotate-180 transition-transform duration-500" />
+                  <span>Resend Verification Email</span>
+                </>
+              )}
+            </button>
+          )}
+
           <button
-            onClick={handleResendEmail}
-            className="w-full bg-[#2E7D32] text-[#fff371] font-bold py-2 px-4 rounded-md transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => {
+              console.log("Proceed to login clicked");
+              onSwitch("login");
+            }}
+            className="w-full py-4 px-6 rounded-xl font-bold text-white transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-3 group"
+            style={{
+              backgroundColor: "rgba(26, 54, 43, 1)",
+              backgroundImage:
+                "linear-gradient(135deg, rgba(26, 54, 43, 1) 0%, rgba(17, 36, 29, 1) 100%)",
+            }}
             disabled={isLoading}
           >
-            {isLoading ? "Resending..." : "Resend Verification Email"}
+            <span>Proceed to Log In</span>
+            <FaArrowRight className="group-hover:translate-x-1 transition-transform duration-200" />
           </button>
-        )}
-        <button
-          onClick={() => {
-            console.log("Proceed to login clicked");
-            onSwitch("login");
-          }}
-          className="w-full bg-[#1A362B] text-[#FFF9B0] font-bold py-2 px-4 rounded-md transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={isLoading}
-        >
-          Proceed to Log In
-        </button>
+        </div>
       </div>
+
+      {/* Footer */}
       <div
-        className="text-sm mt-4 text-center"
-        style={{ color: "rgba(17, 36, 29, 0.8)" }}
+        className="text-center mt-8 pt-6 border-t relative z-10"
+        style={{ borderColor: "rgba(165, 244, 213, 0.5)" }}
       >
-        <p>
+        <p className="text-sm" style={{ color: "rgba(17, 36, 29, 0.7)" }}>
           Already have an account?{" "}
           <button
             type="button"
@@ -134,13 +244,30 @@ const EmailVerification = ({ onSwitch, email = "", handleProceed }) => {
               console.log("Login button clicked");
               onSwitch("login");
             }}
-            className="text-[#2E7D32] hover:underline"
+            className="font-bold hover:underline transition-all duration-200 hover:scale-105"
+            style={{ color: "rgba(26, 54, 43, 1)" }}
             disabled={isLoading}
           >
             Log in
           </button>
         </p>
       </div>
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-white bg-opacity-80 rounded-2xl flex items-center justify-center z-20">
+          <div className="text-center">
+            <div
+              className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4"
+              style={{
+                borderColor: "rgba(26, 54, 43, 1)",
+                borderTopColor: "transparent",
+              }}
+            ></div>
+            <p style={{ color: "rgba(17, 36, 29, 1)" }}>Processing...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

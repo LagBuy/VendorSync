@@ -92,7 +92,7 @@ export default function OverviewCards() {
           message: error.message,
         });
         toast.error(
-          error.response?.data?.message || "Failed to load financial stats.",
+          error.response?.data?.message,
           { className: "custom-toast-error" }
         );
         // Set fallback stats

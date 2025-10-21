@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { axiosInstance } from "../../axios-instance/axios-instance";
 import { FaChartLine, FaCrown, FaStar, FaRocket, FaLock, FaCheck, FaArrowLeft, FaArrowRight, FaTimes } from "react-icons/fa";
 
@@ -16,16 +14,18 @@ export default function SubscriptionPlans() {
   const [cvv, setCvv] = useState("");
   const [formErrors, setFormErrors] = useState({});
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
-  // Auto-dismiss errors after 3 seconds
+  // Auto-dismiss messages after 3 seconds
   useEffect(() => {
-    if (error) {
+    if (error || success) {
       const timer = setTimeout(() => {
         setError(null);
+        setSuccess(null);
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [error]);
+  }, [error, success]);
 
   useEffect(() => {
     if (Object.keys(formErrors).length > 0) {
@@ -75,20 +75,11 @@ export default function SubscriptionPlans() {
                 },
               ]
         );
-        toast.success("🚀 Subscription plans loaded successfully!", {
-          position: "top-right",
-          theme: "dark",
-          autoClose: 3000,
-        });
+        setSuccess("Subscription plans loaded successfully!");
       } catch (error) {
         console.error("Error fetching plans:", error);
         const errorMessage = error.response?.data?.message || "Failed to load subscription plans.";
         setError(errorMessage);
-        toast.error(errorMessage, { 
-          position: "top-right",
-          theme: "dark",
-          autoClose: 3000,
-        });
         setPlans([
           {
             title: "Free",
@@ -146,11 +137,7 @@ export default function SubscriptionPlans() {
         expiry,
         cvv,
       });
-      toast.success("🎉 Subscription successful!", { 
-        position: "top-right",
-        theme: "dark",
-        autoClose: 3000,
-      });
+      setSuccess("Subscription successful!");
       setShowPaymentForm(false);
       setCardNumber("");
       setExpiry("");
@@ -162,11 +149,6 @@ export default function SubscriptionPlans() {
       console.error("Error processing subscription:", error);
       const errorMessage = error.response?.data?.message || "Failed to process subscription.";
       setError(errorMessage);
-      toast.error(errorMessage, { 
-        position: "top-right",
-        theme: "dark",
-        autoClose: 3000,
-      });
     }
   };
 
@@ -206,7 +188,7 @@ export default function SubscriptionPlans() {
 
   return (
     <motion.div
-      className="relative bg-gradient-to-br from-gray-900 to-black p-6 rounded-2xl shadow-2xl border border-gray-800 overflow-hidden"
+      className="relative bg-gradient-to-br from-black to-gray-900 p-6 rounded-2xl shadow-2xl border border-gray-800 overflow-hidden"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
@@ -216,27 +198,38 @@ export default function SubscriptionPlans() {
       <div className="absolute -top-20 -right-20 w-40 h-40 bg-yellow-500/10 rounded-full blur-xl"></div>
       <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-green-500/10 rounded-full blur-xl"></div>
 
-      <ToastContainer 
-        position="top-right"
-        theme="dark"
-        autoClose={3000}
-        toastClassName="bg-gray-900 border border-gray-800"
-      />
-      
       <div className="relative z-10">
-        {/* Error Messages - Auto-dismiss after 3 seconds */}
+        {/* Success Message */}
         <AnimatePresence>
-          {error && (
+          {success && (
             <motion.div 
-              className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl backdrop-blur-sm"
+              className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-xl backdrop-blur-sm"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3 }}
             >
               <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <p className="text-red-400 text-sm font-medium">⚠️ {error}</p>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <p className="text-green-400 text-sm font-medium">✓ {success}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Error Messages */}
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              className="mb-6 p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-xl backdrop-blur-sm"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                <p className="text-yellow-400 text-sm font-medium">⚠️ {error}</p>
               </div>
             </motion.div>
           )}
@@ -443,7 +436,7 @@ export default function SubscriptionPlans() {
               exit={{ opacity: 0 }}
             >
               <motion.div
-                className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 relative"
+                className="bg-gradient-to-br from-black to-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 relative"
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -474,14 +467,14 @@ export default function SubscriptionPlans() {
                       value={cardNumber}
                       onChange={(e) => setCardNumber(e.target.value.replace(/\s/g, ''))}
                       className={`w-full p-4 bg-gray-800/50 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500 text-white placeholder-gray-500 backdrop-blur-sm transition-all duration-300 ${
-                        formErrors.cardNumber ? "border-red-500" : ""
+                        formErrors.cardNumber ? "border-yellow-500" : ""
                       }`}
                       maxLength={16}
                     />
                     <AnimatePresence>
                       {formErrors.cardNumber && (
                         <motion.p 
-                          className="text-red-400 mt-2 text-sm flex items-center"
+                          className="text-yellow-400 mt-2 text-sm flex items-center"
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
@@ -504,14 +497,14 @@ export default function SubscriptionPlans() {
                         value={expiry}
                         onChange={(e) => setExpiry(e.target.value)}
                         className={`w-full p-4 bg-gray-800/50 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500 text-white placeholder-gray-500 backdrop-blur-sm transition-all duration-300 ${
-                          formErrors.expiry ? "border-red-500" : ""
+                          formErrors.expiry ? "border-yellow-500" : ""
                         }`}
                         maxLength={5}
                       />
                       <AnimatePresence>
                         {formErrors.expiry && (
                           <motion.p 
-                            className="text-red-400 mt-2 text-sm flex items-center"
+                            className="text-yellow-400 mt-2 text-sm flex items-center"
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
@@ -531,14 +524,14 @@ export default function SubscriptionPlans() {
                         value={cvv}
                         onChange={(e) => setCvv(e.target.value)}
                         className={`w-full p-4 bg-gray-800/50 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500 text-white placeholder-gray-500 backdrop-blur-sm transition-all duration-300 ${
-                          formErrors.cvv ? "border-red-500" : ""
+                          formErrors.cvv ? "border-yellow-500" : ""
                         }`}
                         maxLength={3}
                       />
                       <AnimatePresence>
                         {formErrors.cvv && (
                           <motion.p 
-                            className="text-red-400 mt-2 text-sm flex items-center"
+                            className="text-yellow-400 mt-2 text-sm flex items-center"
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}

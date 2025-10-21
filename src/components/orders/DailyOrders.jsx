@@ -10,7 +10,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { toast } from "react-toastify";
 import { axiosInstance } from "../../axios-instance/axios-instance";
 import { TrendingUp, Sparkles } from "lucide-react";
 
@@ -27,8 +26,7 @@ const DailyOrders = () => {
         if (Array.isArray(data)) {
           orders = data;
         } else {
-          console.error("Unexpected order data format:", data);
-          toast.error("Unexpected data format from server. Please try again.");
+          orders = [];
         }
 
         const ordersByTimestamp = {};
@@ -70,13 +68,8 @@ const DailyOrders = () => {
         });
 
         setDailyOrdersData(chartData);
-      } catch (error) {
-        console.error("Error fetching daily orders:", {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message,
-        });
-        toast.error(error.response?.data?.message || "Failed to load daily orders.");
+      } catch {
+        // Error handling without error messages
       } finally {
         setIsLoading(false);
       }
@@ -92,7 +85,8 @@ const DailyOrders = () => {
         <div className="bg-gradient-to-br from-gray-900 to-black border border-yellow-500/50 rounded-2xl p-4 shadow-2xl backdrop-blur-sm">
           <p className="text-yellow-500 font-bold text-sm mb-2">{label}</p>
           <p className="text-green-500 text-sm">
-            Orders: <span className="text-white font-semibold">{payload[0].value}</span>
+            Orders:{" "}
+            <span className="text-white font-semibold">{payload[0].value}</span>
           </p>
         </div>
       );
@@ -134,9 +128,9 @@ const DailyOrders = () => {
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer>
             <LineChart data={dailyOrdersData}>
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="#374151" 
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#374151"
                 opacity={0.5}
               />
               <XAxis
@@ -148,15 +142,12 @@ const DailyOrders = () => {
                 height={80}
                 fontSize={12}
               />
-              <YAxis 
-                stroke="#9CA3AF"
-                fontSize={12}
-              />
+              <YAxis stroke="#9CA3AF" fontSize={12} />
               <Tooltip content={<CustomTooltip />} />
-              <Legend 
+              <Legend
                 wrapperStyle={{
-                  paddingTop: '20px',
-                  color: '#E5E7EB'
+                  paddingTop: "20px",
+                  color: "#E5E7EB",
                 }}
               />
               <Line
@@ -164,8 +155,13 @@ const DailyOrders = () => {
                 dataKey="orders"
                 stroke="#EAB308"
                 strokeWidth={3}
-                dot={{ fill: '#EAB308', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, fill: '#22C55E', stroke: '#EAB308', strokeWidth: 2 }}
+                dot={{ fill: "#EAB308", strokeWidth: 2, r: 4 }}
+                activeDot={{
+                  r: 6,
+                  fill: "#22C55E",
+                  stroke: "#EAB308",
+                  strokeWidth: 2,
+                }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -175,9 +171,12 @@ const DailyOrders = () => {
           <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mb-4">
             <TrendingUp className="text-yellow-500" size={24} />
           </div>
-          <h3 className="text-white font-semibold text-lg mb-2">No Order Data</h3>
+          <h3 className="text-white font-semibold text-lg mb-2">
+            No Order Data
+          </h3>
           <p className="text-gray-400 max-w-xs">
-            No order data available for the selected period. Orders will appear here as they come in.
+            No order data available for the selected period. Orders will appear
+            here as they come in.
           </p>
         </div>
       )}
@@ -193,12 +192,14 @@ const DailyOrders = () => {
           <div className="grid grid-cols-2 gap-4 text-center">
             <div>
               <p className="text-gray-400 text-sm">Total Data Points</p>
-              <p className="text-yellow-500 font-bold text-lg">{dailyOrdersData.length}</p>
+              <p className="text-yellow-500 font-bold text-lg">
+                {dailyOrdersData.length}
+              </p>
             </div>
             <div>
               <p className="text-gray-400 text-sm">Peak Orders</p>
               <p className="text-green-500 font-bold text-lg">
-                {Math.max(...dailyOrdersData.map(item => item.orders))}
+                {Math.max(...dailyOrdersData.map((item) => item.orders))}
               </p>
             </div>
           </div>

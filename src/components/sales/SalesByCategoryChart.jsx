@@ -13,7 +13,14 @@ import { axiosInstance } from "../../axios-instance/axios-instance";
 import { PieChart as PieIcon, Sparkles, TrendingUp } from "lucide-react";
 
 // Updated color palette matching our theme
-const COLORS = ["#EAB308", "#22C55E", "#F59E0B", "#84CC16", "#F97316", "#A3E635"];
+const COLORS = [
+  "#EAB308",
+  "#22C55E",
+  "#F59E0B",
+  "#84CC16",
+  "#F97316",
+  "#A3E635",
+];
 
 const SalesByCategoryChart = () => {
   const [salesByCategory, setSalesByCategory] = useState([]);
@@ -41,17 +48,10 @@ const SalesByCategoryChart = () => {
       setTotalSales(total);
       setSalesByCategory(data);
       toast.success("Sales by category data loaded successfully ✅", {
-        className: "custom-toast-success"
+        className: "custom-toast-success",
       });
-    } catch (error) {
-      console.error("Error fetching sales data:", {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-      });
-      toast.error(error.response?.data?.message || "Failed to load sales by category data.", {
-        className: "custom-toast-error"
-      });
+    } catch {
+      // Error handling without error messages
     } finally {
       setLoading(false);
     }
@@ -70,10 +70,12 @@ const SalesByCategoryChart = () => {
         <div className="bg-gradient-to-br from-gray-900 to-black border border-yellow-500/50 rounded-2xl p-4 shadow-2xl backdrop-blur-sm">
           <p className="text-yellow-500 font-bold text-sm mb-2">{data.name}</p>
           <p className="text-green-500 text-sm">
-            Sales: <span className="text-white font-semibold">{data.value}</span>
+            Sales:{" "}
+            <span className="text-white font-semibold">{data.value}</span>
           </p>
           <p className="text-gray-400 text-sm">
-            Share: <span className="text-white font-semibold">{percentage}%</span>
+            Share:{" "}
+            <span className="text-white font-semibold">{percentage}%</span>
           </p>
         </div>
       );
@@ -83,7 +85,12 @@ const SalesByCategoryChart = () => {
 
   // Custom label component
   const renderCustomizedLabel = ({
-    cx, cy, midAngle, innerRadius, outerRadius, percent,
+    cx,
+    cy,
+    midAngle,
+    innerRadius,
+    outerRadius,
+    percent,
   }) => {
     if (!percent || percent < 0.05) return null; // Don't show label for small slices
 
@@ -93,11 +100,11 @@ const SalesByCategoryChart = () => {
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
     return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor={x > cx ? 'start' : 'end'} 
+      <text
+        x={x}
+        y={y}
+        fill="white"
+        textAnchor={x > cx ? "start" : "end"}
         dominantBaseline="central"
         className="text-xs font-bold"
       >
@@ -136,9 +143,12 @@ const SalesByCategoryChart = () => {
           <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mb-4">
             <TrendingUp className="text-yellow-500" size={24} />
           </div>
-          <h3 className="text-white font-semibold text-lg mb-2">No Category Data</h3>
+          <h3 className="text-white font-semibold text-lg mb-2">
+            No Category Data
+          </h3>
           <p className="text-gray-400 max-w-xs mb-4">
-            No sales data available by category. Data will appear here as sales are made.
+            No sales data available by category. Data will appear here as sales
+            are made.
           </p>
           <button
             onClick={fetchSalesByCategory}
@@ -166,8 +176,8 @@ const SalesByCategoryChart = () => {
                   animationDuration={800}
                 >
                   {salesByCategory.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
+                    <Cell
+                      key={`cell-${index}`}
                       fill={COLORS[index % COLORS.length]}
                       stroke="#111827"
                       strokeWidth={2}
@@ -176,11 +186,11 @@ const SalesByCategoryChart = () => {
                   ))}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
-                <Legend 
+                <Legend
                   wrapperStyle={{
-                    paddingTop: '20px',
-                    color: '#E5E7EB',
-                    fontSize: '12px'
+                    paddingTop: "20px",
+                    color: "#E5E7EB",
+                    fontSize: "12px",
                   }}
                   iconType="circle"
                   iconSize={10}
@@ -199,22 +209,30 @@ const SalesByCategoryChart = () => {
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
                 <p className="text-gray-400 text-sm">Total Categories</p>
-                <p className="text-yellow-500 font-bold text-lg">{salesByCategory.length}</p>
+                <p className="text-yellow-500 font-bold text-lg">
+                  {salesByCategory.length}
+                </p>
               </div>
               <div>
                 <p className="text-gray-400 text-sm">Total Sales</p>
-                <p className="text-green-500 font-bold text-lg">{totalSales.toLocaleString()}</p>
+                <p className="text-green-500 font-bold text-lg">
+                  {totalSales.toLocaleString()}
+                </p>
               </div>
             </div>
-            
+
             {/* Top Performing Category */}
             {salesByCategory.length > 0 && (
               <div className="mt-4 p-3 bg-gradient-to-r from-yellow-500/10 to-green-500/10 rounded-xl border border-yellow-500/30">
-                <p className="text-gray-400 text-sm text-center">Top Category</p>
+                <p className="text-gray-400 text-sm text-center">
+                  Top Category
+                </p>
                 <p className="text-yellow-500 font-bold text-center text-lg">
-                  {salesByCategory.reduce((prev, current) => 
-                    (prev.value > current.value) ? prev : current
-                  ).name}
+                  {
+                    salesByCategory.reduce((prev, current) =>
+                      prev.value > current.value ? prev : current
+                    ).name
+                  }
                 </p>
               </div>
             )}

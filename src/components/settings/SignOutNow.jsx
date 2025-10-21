@@ -2,63 +2,33 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogOut, Shield, Sparkles, AlertTriangle, Power } from "lucide-react";
-import { toast } from "react-toastify";
 import Cookies from "js-cookie";
 
-const SignOutNow = ({ onLogin }) => {
+const SignOutNow = () => {
   const [signOutModalOpen, setSignOutModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
     setIsLoading(true);
-    try {
-      console.log("Performing client-side logout...");
-      Cookies.remove("jwt-token", { path: "/" });
-      onLogin(null, null);
-      console.log("Logout successful: JWT cookie removed");
-      toast.success("You've been successfully signed out!", {
-        className: "custom-toast-success",
-      });
-      navigate("/auth");
-    } catch (error) {
-      console.error("Error during client-side logout:", {
-        message: error.message,
-      });
-      toast.error("Logout failed. Please try again.", {
-        className: "custom-toast-error",
-      });
-    } finally {
-      setIsLoading(false);
-      setSignOutModalOpen(false); // Close modal after every attempt
-    }
-  };
 
-  // Custom Toast Styles
-  const toastStyles = `
-    .custom-toast-success {
-      background: linear-gradient(135deg, #111827 0%, #000000 100%) !important;
-      color: #22C55E !important;
-      border: 1px solid #22C55E !important;
-      border-radius: 16px !important;
-      backdrop-filter: blur(10px) !important;
-    }
-    .custom-toast-error {
-      background: linear-gradient(135deg, #111827 0%, #000000 100%) !important;
-      color: #EF4444 !important;
-      border: 1px solid #EF4444 !important;
-      border-radius: 16px !important;
-      backdrop-filter: blur(10px) !important;
-    }
-    .Toastify__progress-bar {
-      background: #EAB308 !important;
-    }
-  `;
+    // Client-side logout - no API calls
+    console.log("Performing client-side logout...");
+
+    // Remove JWT token from cookies
+    Cookies.remove("jwt-token", { path: "/" });
+
+    console.log("Logout successful: JWT cookie removed");
+
+    // Navigate to auth page
+    navigate("/auth");
+
+    setIsLoading(false);
+    setSignOutModalOpen(false);
+  };
 
   return (
     <>
-      <style>{toastStyles}</style>
-
       <motion.div
         className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl p-8 border border-gray-800 backdrop-blur-sm mb-8"
         initial={{ opacity: 0, y: 20 }}

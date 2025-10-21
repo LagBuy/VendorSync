@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
-import { CheckCircle, Clock, DollarSign, ShoppingBag, Package, TrendingUp, Sparkles } from "lucide-react";
-import { motion} from "framer-motion";
-import { toast } from "react-toastify";
+import {
+  CheckCircle,
+  Clock,
+  DollarSign,
+  ShoppingBag,
+  Package,
+  TrendingUp,
+  Sparkles,
+} from "lucide-react";
+import { motion } from "framer-motion";
 import { axiosInstance } from "../axios-instance/axios-instance";
 import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
@@ -25,8 +32,7 @@ const OrdersPage = () => {
         if (Array.isArray(data)) {
           orders = data;
         } else {
-          console.error("Unexpected order data format:", data);
-          toast.error("Unexpected data format from server. Please try again.");
+          orders = [];
         }
 
         setTotalOrders(orders.length);
@@ -44,13 +50,8 @@ const OrdersPage = () => {
           0
         );
         setTotalRevenue(revenue);
-      } catch (error) {
-        console.error("Failed to fetch order stats:", {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message,
-        });
-        toast.error(error.response?.data?.message || "Failed to load orders. Please try again.");
+      } catch {
+        // Error handling without error messages
       } finally {
         setIsLoading(false);
       }
@@ -81,8 +82,8 @@ const OrdersPage = () => {
         />
       </div>
 
-      <Header 
-        title="Order Management" 
+      <Header
+        title="Order Management"
         className="text-white font-bold text-4xl mb-8 relative z-10"
         icon={<Package className="text-yellow-500 mr-3" />}
       />
@@ -111,7 +112,11 @@ const OrdersPage = () => {
             className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-12"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: "easeOut", staggerChildren: 0.1 }}
+            transition={{
+              duration: 0.7,
+              ease: "easeOut",
+              staggerChildren: 0.1,
+            }}
           >
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -193,7 +198,9 @@ const OrdersPage = () => {
               >
                 <div className="flex items-center mb-6">
                   <ShoppingBag className="mr-3 text-yellow-500" size={24} />
-                  <h3 className="text-xl font-bold text-white">Order Management</h3>
+                  <h3 className="text-xl font-bold text-white">
+                    Order Management
+                  </h3>
                 </div>
                 <OrdersTable />
               </motion.div>
@@ -221,7 +228,9 @@ const OrdersPage = () => {
               >
                 <div className="flex items-center mb-6">
                   <Package className="mr-3 text-yellow-500" size={24} />
-                  <h3 className="text-xl font-bold text-white">Order Distribution</h3>
+                  <h3 className="text-xl font-bold text-white">
+                    Order Distribution
+                  </h3>
                 </div>
                 <OrderDistribution />
               </motion.div>
@@ -241,12 +250,16 @@ const OrdersPage = () => {
               <div className="flex items-center">
                 <Sparkles className="text-yellow-500 mr-3" size={24} />
                 <div>
-                  <h4 className="text-lg font-bold text-white">Order Performance</h4>
+                  <h4 className="text-lg font-bold text-white">
+                    Order Performance
+                  </h4>
                   <p className="text-gray-400">
-                    {completedOrders > 0 && totalOrders > 0 
-                      ? `Completion Rate: ${((completedOrders / totalOrders) * 100).toFixed(1)}%`
-                      : "Track your order completion rate"
-                    }
+                    {completedOrders > 0 && totalOrders > 0
+                      ? `Completion Rate: ${(
+                          (completedOrders / totalOrders) *
+                          100
+                        ).toFixed(1)}%`
+                      : "Track your order completion rate"}
                   </p>
                 </div>
               </div>

@@ -39,18 +39,10 @@ const DailySalesTrend = () => {
         setDailySalesData(data);
         toast.success("Daily sales data loaded successfully ✅", {
           className: "custom-toast-success",
-          autoClose: 3000
+          autoClose: 3000,
         });
-      } catch (error) {
-        console.error("Error fetching sales data:", {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message,
-        });
-        toast.error(error.response?.data?.message || "Failed to load daily sales data.", {
-          className: "custom-toast-error",
-          autoClose: 3000
-        });
+      } catch {
+        // Error handling without error messages
       } finally {
         setLoading(false);
       }
@@ -75,11 +67,10 @@ const DailySalesTrend = () => {
         <div className="bg-gradient-to-br from-gray-900 to-black border border-yellow-500/50 rounded-2xl p-4 shadow-2xl backdrop-blur-sm">
           <p className="text-yellow-500 font-bold text-sm mb-2">{label}</p>
           <p className="text-green-500 text-sm">
-            Sales: <span className="text-white font-semibold">{payload[0].value}</span>
+            Sales:{" "}
+            <span className="text-white font-semibold">{payload[0].value}</span>
           </p>
-          <p className="text-gray-400 text-xs mt-1">
-            Time: {saleTime}
-          </p>
+          <p className="text-gray-400 text-xs mt-1">Time: {saleTime}</p>
         </div>
       );
     }
@@ -88,9 +79,9 @@ const DailySalesTrend = () => {
 
   // Function to get gradient color based on value
   const getBarColor = (value) => {
-    const maxValue = Math.max(...dailySalesData.map(item => item.sales));
+    const maxValue = Math.max(...dailySalesData.map((item) => item.sales));
     const intensity = value / maxValue;
-    
+
     if (intensity > 0.7) return "#22C55E"; // Green for high values
     if (intensity > 0.4) return "#EAB308"; // Yellow for medium values
     return "#F59E0B"; // Orange for lower values
@@ -127,40 +118,43 @@ const DailySalesTrend = () => {
           <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mb-4">
             <TrendingUp className="text-yellow-500" size={24} />
           </div>
-          <h3 className="text-white font-semibold text-lg mb-2">No Sales Data</h3>
+          <h3 className="text-white font-semibold text-lg mb-2">
+            No Sales Data
+          </h3>
           <p className="text-gray-400 max-w-xs">
-            No sales data available for today. Sales will appear here as they occur.
+            No sales data available for today. Sales will appear here as they
+            occur.
           </p>
         </div>
       ) : (
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer>
             <BarChart data={dailySalesData}>
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="#374151" 
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#374151"
                 opacity={0.3}
               />
-              <XAxis 
-                dataKey="name" 
+              <XAxis
+                dataKey="name"
                 stroke="#9CA3AF"
                 fontSize={12}
-                tick={{ fill: '#9CA3AF' }}
+                tick={{ fill: "#9CA3AF" }}
               />
-              <YAxis 
+              <YAxis
                 stroke="#9CA3AF"
                 fontSize={12}
-                tick={{ fill: '#9CA3AF' }}
+                tick={{ fill: "#9CA3AF" }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Bar 
-                dataKey="sales" 
+              <Bar
+                dataKey="sales"
                 radius={[4, 4, 0, 0]}
                 animationDuration={1500}
               >
                 {dailySalesData.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
+                  <Cell
+                    key={`cell-${index}`}
                     fill={getBarColor(entry.sales, index)}
                     className="hover:opacity-80 transition-opacity duration-200"
                   />
@@ -182,12 +176,14 @@ const DailySalesTrend = () => {
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-gray-400 text-sm">Total Periods</p>
-              <p className="text-yellow-500 font-bold text-lg">{dailySalesData.length}</p>
+              <p className="text-yellow-500 font-bold text-lg">
+                {dailySalesData.length}
+              </p>
             </div>
             <div>
               <p className="text-gray-400 text-sm">Peak Sales</p>
               <p className="text-green-500 font-bold text-lg">
-                {Math.max(...dailySalesData.map(item => item.sales))}
+                {Math.max(...dailySalesData.map((item) => item.sales))}
               </p>
             </div>
             <div>

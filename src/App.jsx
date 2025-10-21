@@ -47,7 +47,7 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-800 text-gray-100 overflow-hidden">
+    <div className="flex h-screen bg-gray-200 text-gray-100 overflow-hidden">
       {user && <Sidebar onLogin={handleLogin} />}
       <div className="flex-1 overflow-y-auto">
         <Routes>
@@ -64,7 +64,10 @@ function App() {
             </>
           ) : (
             <>
-              <Route path="/auth" element={<AuthPage onLogin={handleLogin} />} />
+              <Route
+                path="/auth"
+                element={<AuthPage onLogin={handleLogin} />}
+              />
               <Route path="/reset-password" element={<ChangePasswordForm />} />
               <Route path="*" element={<AuthPage onLogin={handleLogin} />} />
             </>

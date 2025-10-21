@@ -1,9 +1,16 @@
 import { useState, useEffect } from "react";
-import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import { axiosInstance } from "../../axios-instance/axios-instance";
 import SettingSection from "./SettingSection";
-import { HelpCircle, Link, Unlink, Sparkles, MessageCircle, ExternalLink, Shield } from "lucide-react";
+import {
+  HelpCircle,
+  Link,
+  Unlink,
+  Sparkles,
+  MessageCircle,
+  ExternalLink,
+  Shield,
+} from "lucide-react";
 
 const ConnectedAccounts = () => {
   const [connectedAccounts, setConnectedAccounts] = useState([
@@ -14,7 +21,7 @@ const ConnectedAccounts = () => {
       icon: "/google.png",
       url: "https://google.com",
       color: "#4285F4",
-      description: "Connect your Google account for seamless authentication"
+      description: "Connect your Google account for seamless authentication",
     },
     {
       id: 2,
@@ -23,7 +30,7 @@ const ConnectedAccounts = () => {
       icon: "/facebook.svg",
       url: "",
       color: "#1877F2",
-      description: "Link Facebook for social media integration"
+      description: "Link Facebook for social media integration",
     },
     {
       id: 3,
@@ -32,7 +39,7 @@ const ConnectedAccounts = () => {
       icon: "/x.png",
       url: "",
       color: "#000000",
-      description: "Connect Twitter for social sharing"
+      description: "Connect Twitter for social sharing",
     },
     {
       id: 4,
@@ -41,7 +48,7 @@ const ConnectedAccounts = () => {
       icon: "/instagram.avif",
       url: "",
       color: "#E4405F",
-      description: "Link Instagram for media integration"
+      description: "Link Instagram for media integration",
     },
     {
       id: 5,
@@ -50,7 +57,7 @@ const ConnectedAccounts = () => {
       icon: "/Tiktok.webp",
       url: "",
       color: "#000000",
-      description: "Connect TikTok for video content"
+      description: "Connect TikTok for video content",
     },
     {
       id: 6,
@@ -59,7 +66,7 @@ const ConnectedAccounts = () => {
       icon: "/WhatsApp.png",
       url: "",
       color: "#25D366",
-      description: "Link WhatsApp for messaging"
+      description: "Link WhatsApp for messaging",
     },
     {
       id: 7,
@@ -68,7 +75,7 @@ const ConnectedAccounts = () => {
       icon: "/WhatsAppB.png",
       url: "",
       color: "#075E54",
-      description: "Connect WhatsApp Business for professional messaging"
+      description: "Connect WhatsApp Business for professional messaging",
     },
   ]);
   const [showModal, setShowModal] = useState(false);
@@ -97,17 +104,11 @@ const ConnectedAccounts = () => {
             : acc;
         });
         setConnectedAccounts(updatedAccounts);
-        toast.success("Connected accounts loaded successfully!", {
-          className: "custom-toast-success"
-        });
       } catch (error) {
         console.error("Error fetching connected accounts:", {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
-        });
-        toast.error(error.response?.data?.message || "Failed to load connected accounts.", {
-          className: "custom-toast-error"
         });
       } finally {
         setLoading(false);
@@ -126,23 +127,19 @@ const ConnectedAccounts = () => {
     } else {
       setSaving(true);
       try {
-        await axiosInstance.delete(`/linked-accounts/${account.name.toLowerCase()}`);
+        await axiosInstance.delete(
+          `/linked-accounts/${account.name.toLowerCase()}`
+        );
         setConnectedAccounts(
           connectedAccounts.map((acc) =>
             acc.id === account.id ? { ...acc, connected: false, url: "" } : acc
           )
         );
-        toast.success(`${account.name} account disconnected successfully!`, {
-          className: "custom-toast-success"
-        });
       } catch (error) {
         console.error("Error disconnecting account:", {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
-        });
-        toast.error(error.response?.data?.message || `Failed to disconnect ${account.name} account.`, {
-          className: "custom-toast-error"
         });
       } finally {
         setSaving(false);
@@ -160,7 +157,9 @@ const ConnectedAccounts = () => {
     }
 
     if (!isValidUrl) {
-      setError("Please enter a valid URL (must start with http:// or https://).");
+      setError(
+        "Please enter a valid URL (must start with http:// or https://)."
+      );
       return;
     }
 
@@ -177,9 +176,6 @@ const ConnectedAccounts = () => {
             : acc
         )
       );
-      toast.success(`${activeAccount.name} account connected successfully!`, {
-        className: "custom-toast-success"
-      });
       setShowModal(false);
       setInputUrl("");
       setActiveAccount(null);
@@ -189,9 +185,6 @@ const ConnectedAccounts = () => {
         status: error.response?.status,
         data: error.response?.data,
         message: error.message,
-      });
-      toast.error(error.response?.data?.message || `Failed to connect ${activeAccount.name} account.`, {
-        className: "custom-toast-error"
       });
     } finally {
       setSaving(false);
@@ -206,7 +199,7 @@ const ConnectedAccounts = () => {
       transition={{ type: "spring", stiffness: 300 }}
     >
       <div className="flex items-center space-x-4">
-        <div 
+        <div
           className="p-3 rounded-xl flex items-center justify-center border border-gray-700"
           style={{ backgroundColor: `${account.color}20` }}
         >
@@ -227,15 +220,15 @@ const ConnectedAccounts = () => {
           )}
         </div>
       </div>
-      
+
       <motion.button
         onClick={() => handleToggle(account)}
         disabled={saving || account.name === "Google"}
         className={`flex items-center justify-center w-20 py-2 rounded-xl font-semibold transition-all duration-300 ${
           account.connected
-            ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-400 hover:to-green-500'
-            : 'bg-gradient-to-r from-gray-700 to-gray-800 text-gray-300 hover:from-gray-600 hover:to-gray-700 border border-gray-600'
-        } ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            ? "bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-400 hover:to-green-500"
+            : "bg-gradient-to-r from-gray-700 to-gray-800 text-gray-300 hover:from-gray-600 hover:to-gray-700 border border-gray-600"
+        } ${saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
         whileHover={{ scale: account.name === "Google" ? 1 : 1.05 }}
         whileTap={{ scale: account.name === "Google" ? 1 : 0.95 }}
       >
@@ -255,8 +248,8 @@ const ConnectedAccounts = () => {
   );
 
   return (
-    <SettingSection 
-      icon={HelpCircle} 
+    <SettingSection
+      icon={HelpCircle}
       title="Connected Accounts"
       className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl p-8 border border-gray-800 backdrop-blur-sm"
     >
@@ -284,7 +277,10 @@ const ConnectedAccounts = () => {
             className="space-y-4"
           >
             {[...Array(7)].map((_, index) => (
-              <div key={index} className="flex items-center justify-between p-4 rounded-2xl border border-gray-800 bg-gradient-to-r from-gray-900/50 to-black/50">
+              <div
+                key={index}
+                className="flex items-center justify-between p-4 rounded-2xl border border-gray-800 bg-gradient-to-r from-gray-900/50 to-black/50"
+              >
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-gray-800 rounded-xl animate-pulse"></div>
                   <div className="space-y-2">
@@ -330,18 +326,20 @@ const ConnectedAccounts = () => {
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-gray-400 text-sm">Total Platforms</p>
-              <p className="text-yellow-500 font-bold text-lg">{connectedAccounts.length}</p>
+              <p className="text-yellow-500 font-bold text-lg">
+                {connectedAccounts.length}
+              </p>
             </div>
             <div>
               <p className="text-gray-400 text-sm">Connected</p>
               <p className="text-green-500 font-bold text-lg">
-                {connectedAccounts.filter(acc => acc.connected).length}
+                {connectedAccounts.filter((acc) => acc.connected).length}
               </p>
             </div>
             <div>
               <p className="text-gray-400 text-sm">Available</p>
               <p className="text-gray-400 font-bold text-lg">
-                {connectedAccounts.filter(acc => !acc.connected).length}
+                {connectedAccounts.filter((acc) => !acc.connected).length}
               </p>
             </div>
           </div>
@@ -369,7 +367,7 @@ const ConnectedAccounts = () => {
                   Link {activeAccount?.name} Account
                 </h2>
               </div>
-              
+
               <div className="mb-6">
                 <label className="text-gray-400 text-sm mb-2 block">
                   Enter your {activeAccount?.name} profile URL
@@ -386,7 +384,7 @@ const ConnectedAccounts = () => {
                   disabled={saving}
                 />
                 {error && (
-                  <motion.p 
+                  <motion.p
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="text-red-500 text-sm mt-2 flex items-center"
@@ -423,7 +421,11 @@ const ConnectedAccounts = () => {
                     <div className="flex items-center">
                       <motion.div
                         animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
                         className="w-4 h-4 border-2 border-black border-t-transparent rounded-full mr-2"
                       />
                       Connecting...

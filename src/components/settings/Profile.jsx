@@ -1,9 +1,7 @@
-import { useState, useEffect } from "react";
-import { User, Sparkles, Edit3, Camera } from "lucide-react";
-import { toast } from "react-toastify";
+import { useState, useEffect, useRef } from "react";
+import { User, Sparkles, Edit3, Camera, Upload, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { axiosInstance } from "../../axios-instance/axios-instance";
-import Cookies from "js-cookie";
 import SettingSection from "./SettingSection";
 
 const Profile = () => {
@@ -15,28 +13,15 @@ const Profile = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-
-  // Generate random avatar using DiceBear Avataaars
-  const getAvatarUrl = (gender) => {
-    const seed = Math.random().toString(36).substring(2);
-    const baseUrl = "https://api.dicebear.com/7.x/avataaars/svg";
-    const avatarUrl = `${baseUrl}?seed=${seed}`;
-    console.log("Generated Avatar URL:", avatarUrl, "Gender:", gender);
-    return avatarUrl;
-  };
-
-  // Fallback image URL
-  const fallbackAvatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=default";
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const token = Cookies.get("jwt-token");
-        console.log("JWT Token:", token ? "Present" : "Missing");
         const { data } = await axiosInstance.get("/auth/user/");
-        console.log("Full API Response:", data);
-        console.log("User Profile:", data.user_profile);
-        console.log("Gender:", data.user_profile?.gender);
 
         if (data.email && data.user_profile) {
           setUserData({
@@ -44,9 +29,6 @@ const Profile = () => {
             email: data.email || "",
             gender: data.user_profile.gender || "",
             image: data.user_profile.image || null,
-          });
-          toast.success("Profile data loaded successfully!", {
-            className: "custom-toast-success"
           });
         } else {
           throw new Error("Incomplete user data received");
@@ -57,10 +39,6 @@ const Profile = () => {
           data: error.response?.data,
           message: error.message,
         });
-        toast.error(
-          error.response?.data?.detail || "Failed to load profile data. Please ensure you are logged in.",
-          { className: "custom-toast-error" }
-        );
         setUserData({
           first_name: "",
           email: "",
@@ -75,12 +53,91 @@ const Profile = () => {
     fetchUserData();
   }, []);
 
+  const handleImageSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file (JPEG, PNG, etc.)');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Please select an image smaller than 5MB');
+        return;
+      }
+
+      setSelectedImage(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUploadImage = async () => {
+    if (!selectedImage) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedImage);
+
+      const { data } = await axiosInstance.put('/auth/user/profile/image/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // Update user data with new image
+      setUserData(prev => ({
+        ...prev,
+        image: data.image_url || data.user_profile?.image
+      }));
+
+      // Reset states
+      setSelectedImage(null);
+      setImagePreview(null);
+      
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleCancelUpload = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <SettingSection 
       icon={User} 
       title=""
       className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl p-8 border border-gray-800 backdrop-blur-sm"
     >
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImageSelect}
+        accept="image/*"
+        className="hidden"
+      />
+
       {/* Profile Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
@@ -104,23 +161,36 @@ const Profile = () => {
           transition={{ type: "spring", stiffness: 300 }}
         >
           <div className="relative">
-            <img
-              src={userData.image || getAvatarUrl(userData.gender)}
-              alt="Profile Avatar"
-              className="rounded-2xl w-32 h-32 object-cover border-2 border-yellow-500/50 shadow-lg"
-              onLoad={() => console.log("Avatar image loaded successfully")}
-              onError={(e) => {
-                console.error("Avatar image failed to load:", e);
-                e.target.src = fallbackAvatar;
-              }}
-            />
+            {userData.image || imagePreview ? (
+              <img
+                src={imagePreview || userData.image}
+                alt="Profile Avatar"
+                className="rounded-2xl w-32 h-32 object-cover border-2 border-yellow-500/50 shadow-lg"
+              />
+            ) : (
+              <div className="rounded-2xl w-32 h-32 border-2 border-yellow-500/50 shadow-lg bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                <User className="text-yellow-500" size={48} />
+              </div>
+            )}
+            
             {/* Edit Overlay */}
-            <div className="absolute inset-0 bg-black bg-opacity-50 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div 
+              className="absolute inset-0 bg-black bg-opacity-50 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
+              onClick={triggerFileInput}
+            >
               <Camera className="text-white" size={24} />
             </div>
           </div>
+          
           {/* Status Indicator */}
           <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 border-2 border-gray-900 rounded-full"></div>
+
+          {/* Upload Progress Indicator */}
+          {uploading && (
+            <div className="absolute inset-0 bg-black bg-opacity-70 rounded-2xl flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
         </motion.div>
 
         {/* User Info */}
@@ -163,6 +233,56 @@ const Profile = () => {
         </div>
       </div>
 
+      {/* Image Upload Controls */}
+      {selectedImage && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-yellow-500 font-semibold text-sm">New Photo Selected</h4>
+            <button
+              onClick={handleCancelUpload}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="flex gap-3">
+            <motion.button
+              onClick={handleUploadImage}
+              disabled={uploading}
+              className="flex items-center justify-center bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-2 px-4 rounded-lg text-sm hover:from-green-400 hover:to-green-500 transition-all duration-300 disabled:opacity-50 flex-1"
+              whileHover={{ scale: uploading ? 1 : 1.02 }}
+              whileTap={{ scale: uploading ? 1 : 0.98 }}
+            >
+              {uploading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload size={16} className="mr-2" />
+                  Save Photo
+                </>
+              )}
+            </motion.button>
+            <motion.button
+              onClick={handleCancelUpload}
+              className="flex items-center justify-center bg-gradient-to-r from-gray-700 to-gray-800 text-white font-bold py-2 px-4 rounded-lg text-sm hover:from-gray-600 hover:to-gray-700 transition-all duration-300 border border-gray-600 flex-1"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <X size={16} className="mr-2" />
+              Cancel
+            </motion.button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4 mt-8">
         <motion.button 
@@ -179,6 +299,7 @@ const Profile = () => {
           className="flex items-center justify-center bg-gradient-to-r from-gray-800 to-gray-900 text-white font-bold py-3 px-6 rounded-xl border border-gray-700 hover:border-yellow-500/50 transition-all duration-300 shadow-lg flex-1"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
+          onClick={triggerFileInput}
         >
           <Camera size={18} className="mr-2" />
           Change Photo

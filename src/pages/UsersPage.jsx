@@ -60,18 +60,7 @@ const UsersPage = () => {
           position: "top-center",
           autoClose: 3000,
         });
-      } catch (error) {
-        console.error("Error fetching data:", {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message,
-        });
-        const errorMessage =
-          error.response?.data?.message || "Failed to load customer data.";
-        toast.error(errorMessage, {
-          position: "top-center",
-          autoClose: 3000,
-        });
+      } catch {
         // Set fallback values on error
         setCustomers([]);
         setTotalCustomers(0);

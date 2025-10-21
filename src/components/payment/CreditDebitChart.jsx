@@ -82,16 +82,16 @@ const CreditDebitChart = () => {
         toast.success("📊 Financial data loaded successfully!", {
           position: "top-right",
           theme: "dark",
-          autoClose: 3000,
+          autoClose: 1000,
         });
       } catch (error) {
         console.error("Error fetching credit/debit data:", error);
-        const errorMessage = error.response?.data?.message || "Failed to load financial data.";
+        const errorMessage = error.response?.data?.message;
         setError(errorMessage);
         toast.error(errorMessage, { 
           position: "top-right",
           theme: "dark",
-          autoClose: 3000,
+          autoClose: 1000,
         });
         setChartDataList([]);
         setTotalCredit(0);

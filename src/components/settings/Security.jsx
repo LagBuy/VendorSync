@@ -1,8 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import { axiosInstance } from "../../axios-instance/axios-instance";
-import { Lock, Shield, Camera, Scan, Sparkles, CheckCircle } from "lucide-react";
+import {
+  Lock,
+  Shield,
+  Camera,
+  Scan,
+  Sparkles,
+  CheckCircle,
+} from "lucide-react";
 import SettingSection from "./SettingSection";
 import Modal from "antd/es/modal/Modal";
 import ChangePassword from "./ChangePassword";
@@ -25,8 +31,8 @@ const Security = () => {
       label: "Two-Factor Authentication",
       description: "Add an extra layer of security with biometric verification",
       icon: Shield,
-      color: "#EAB308"
-    }
+      color: "#EAB308",
+    },
   ];
 
   // Fetch 2FA status on mount
@@ -37,17 +43,11 @@ const Security = () => {
         const { data } = await axiosInstance.get("/two-factor");
         setTwoFactor(data.enabled ?? false);
         setIsFaceScanned(data.enabled ?? false);
-        toast.success("Security settings loaded successfully!", {
-          className: "custom-toast-success"
-        });
       } catch (error) {
         console.error("Error fetching 2FA status:", {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
-        });
-        toast.error(error.response?.data?.message || "Failed to load security settings.", {
-          className: "custom-toast-error"
         });
       } finally {
         setLoading(false);
@@ -69,9 +69,6 @@ const Security = () => {
       }
     } catch (err) {
       console.error("Error accessing the camera:", err);
-      toast.error("Failed to access camera for face scan.", {
-        className: "custom-toast-error"
-      });
       setIsScanning(false);
     }
   };
@@ -88,26 +85,17 @@ const Security = () => {
       try {
         await axiosInstance.post("/face-scan", { image: capturedImage });
         setIsFaceScanned(true);
-        toast.success("Face scan completed successfully!", {
-          className: "custom-toast-success"
-        });
       } catch (error) {
         console.error("Error uploading face scan:", {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
         });
-        toast.error(error.response?.data?.message || "Failed to upload face scan.", {
-          className: "custom-toast-error"
-        });
         setTwoFactor(false);
       } finally {
         setSaving(false);
       }
     } else {
-      toast.error("Please capture a face image before completing the scan.", {
-        className: "custom-toast-error"
-      });
       setTwoFactor(false);
     }
   };
@@ -124,9 +112,6 @@ const Security = () => {
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       const image = canvas.toDataURL("image/png");
       setCapturedImage(image);
-      toast.success("Face captured successfully!", {
-        className: "custom-toast-success"
-      });
     }
   };
 
@@ -134,7 +119,7 @@ const Security = () => {
   const handleTwoFactorToggle = async () => {
     const newTwoFactor = !twoFactor;
     setTwoFactor(newTwoFactor);
-    
+
     if (newTwoFactor) {
       startFaceScan();
     } else {
@@ -143,17 +128,11 @@ const Security = () => {
         await axiosInstance.patch("/two-factor", { enabled: false });
         setIsFaceScanned(false);
         setCapturedImage(null);
-        toast.success("2FA disabled successfully!", {
-          className: "custom-toast-success"
-        });
       } catch (error) {
         console.error("Error updating 2FA status:", {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
-        });
-        toast.error(error.response?.data?.message || "Failed to update 2FA status.", {
-          className: "custom-toast-error"
         });
         setTwoFactor(true);
       } finally {
@@ -173,14 +152,22 @@ const Security = () => {
   }, [twoFactor]);
 
   // Custom Toggle Switch Component
-  const SecurityToggleSwitch = ({ label, description, isOn, onToggle, disabled, icon: Icon, color }) => (
-    <motion.div 
+  const SecurityToggleSwitch = ({
+    label,
+    description,
+    isOn,
+    onToggle,
+    disabled,
+    icon: Icon,
+    color,
+  }) => (
+    <motion.div
       className="flex items-center justify-between p-6 rounded-2xl border border-gray-800 bg-gradient-to-r from-gray-900/50 to-black/50 backdrop-blur-sm hover:border-yellow-500/30 transition-all duration-300"
       whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300 }}
     >
       <div className="flex items-center space-x-4">
-        <div 
+        <div
           className="p-3 rounded-xl flex items-center justify-center"
           style={{ backgroundColor: `${color}20` }}
         >
@@ -191,17 +178,17 @@ const Security = () => {
           <p className="text-gray-400 text-sm">{description}</p>
         </div>
       </div>
-      
+
       <button
         onClick={onToggle}
         disabled={disabled || saving}
         className={`relative inline-flex items-center h-7 rounded-full w-14 transition-colors duration-300 ease-in-out focus:outline-none ${
-          isOn ? 'bg-green-500' : 'bg-gray-700'
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          isOn ? "bg-green-500" : "bg-gray-700"
+        } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
       >
         <motion.span
           className={`inline-block w-5 h-5 transform bg-white rounded-full shadow-lg ${
-            isOn ? 'translate-x-8' : 'translate-x-1'
+            isOn ? "translate-x-8" : "translate-x-1"
           }`}
           layout
           transition={{ type: "spring", stiffness: 500, damping: 30 }}
@@ -212,8 +199,8 @@ const Security = () => {
 
   return (
     <>
-      <SettingSection 
-        icon={Lock} 
+      <SettingSection
+        icon={Lock}
         title="Security Center"
         className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl p-8 border border-gray-800 backdrop-blur-sm"
       >
@@ -241,7 +228,10 @@ const Security = () => {
               className="space-y-4"
             >
               {[...Array(2)].map((_, index) => (
-                <div key={index} className="flex items-center justify-between p-6 rounded-2xl border border-gray-800 bg-gradient-to-r from-gray-900/50 to-black/50">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-6 rounded-2xl border border-gray-800 bg-gradient-to-r from-gray-900/50 to-black/50"
+                >
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 bg-gray-800 rounded-xl animate-pulse"></div>
                     <div className="space-y-2">
@@ -305,10 +295,11 @@ const Security = () => {
                   </h4>
                 </div>
                 <p className="text-gray-400 text-sm">
-                  Please align your face within the frame to enable two-factor authentication.
+                  Please align your face within the frame to enable two-factor
+                  authentication.
                 </p>
               </div>
-              
+
               <div className="flex flex-col lg:flex-row items-center gap-8">
                 <div className="flex-1">
                   <div className="relative bg-black rounded-2xl p-4 border border-gray-700">
@@ -320,7 +311,7 @@ const Security = () => {
                     <div className="absolute inset-0 border-2 border-yellow-500/50 rounded-xl pointer-events-none"></div>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col gap-4">
                   <motion.button
                     onClick={captureFace}
@@ -332,7 +323,7 @@ const Security = () => {
                     <Camera size={18} className="mr-2" />
                     Capture Face
                   </motion.button>
-                  
+
                   <motion.button
                     onClick={stopFaceScan}
                     className="flex items-center justify-center bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-xl hover:from-green-400 hover:to-green-500 transition-all duration-300 shadow-lg"
@@ -345,11 +336,8 @@ const Security = () => {
                   </motion.button>
                 </div>
               </div>
-              
-              <canvas
-                ref={canvasRef}
-                style={{ display: "none" }}
-              ></canvas>
+
+              <canvas ref={canvasRef} style={{ display: "none" }}></canvas>
             </motion.div>
           )}
         </AnimatePresence>
@@ -395,7 +383,8 @@ const Security = () => {
                 </h4>
               </div>
               <p className="text-gray-400 text-sm">
-                Two-factor authentication with face recognition is now enabled and protecting your account.
+                Two-factor authentication with face recognition is now enabled
+                and protecting your account.
               </p>
             </motion.div>
           )}
@@ -416,7 +405,9 @@ const Security = () => {
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   className="w-5 h-5 border-2 border-yellow-500 border-t-transparent rounded-full mr-3"
                 />
-                <span className="text-yellow-500 text-sm font-medium">Updating security settings...</span>
+                <span className="text-yellow-500 text-sm font-medium">
+                  Updating security settings...
+                </span>
               </div>
             </motion.div>
           )}
@@ -433,18 +424,22 @@ const Security = () => {
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
                 <p className="text-gray-400 text-sm">2FA Status</p>
-                <p className={`font-bold text-lg ${
-                  twoFactor ? 'text-green-500' : 'text-yellow-500'
-                }`}>
-                  {twoFactor ? 'Active' : 'Inactive'}
+                <p
+                  className={`font-bold text-lg ${
+                    twoFactor ? "text-green-500" : "text-yellow-500"
+                  }`}
+                >
+                  {twoFactor ? "Active" : "Inactive"}
                 </p>
               </div>
               <div>
                 <p className="text-gray-400 text-sm">Face Scan</p>
-                <p className={`font-bold text-lg ${
-                  isFaceScanned ? 'text-green-500' : 'text-gray-400'
-                }`}>
-                  {isFaceScanned ? 'Verified' : 'Pending'}
+                <p
+                  className={`font-bold text-lg ${
+                    isFaceScanned ? "text-green-500" : "text-gray-400"
+                  }`}
+                >
+                  {isFaceScanned ? "Verified" : "Pending"}
                 </p>
               </div>
             </div>
@@ -460,10 +455,10 @@ const Security = () => {
         className="security-modal"
         styles={{
           body: {
-            background: 'linear-gradient(135deg, #111827 0%, #000000 100%)',
-            borderRadius: '24px',
-            padding: '0'
-          }
+            background: "linear-gradient(135deg, #111827 0%, #000000 100%)",
+            borderRadius: "24px",
+            padding: "0",
+          },
         }}
       >
         <div className="p-8">

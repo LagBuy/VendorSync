@@ -1,18 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { axiosInstance } from "../../axios-instance/axios-instance";
-import { 
-  CheckCircle, 
-  Shield, 
-  Upload, 
-  FileText, 
-  Camera, 
-  Sparkles, 
+import {
+  CheckCircle,
+  Shield,
+  Upload,
+  FileText,
+  Camera,
+  Sparkles,
   AlertCircle,
   ArrowLeft,
-  Loader2
+  Loader2,
 } from "lucide-react";
 
 const VerifyPage = () => {
@@ -37,55 +35,27 @@ const VerifyPage = () => {
       name: "Driver's License",
       icon: FileText,
       color: "#EAB308",
-      description: "Government-issued driver's license"
+      description: "Government-issued driver's license",
     },
     {
       name: "International Passport",
       icon: Shield,
       color: "#22C55E",
-      description: "Valid passport with photo"
+      description: "Valid passport with photo",
     },
     {
       name: "NIN Document",
       icon: CheckCircle,
       color: "#3B82F6",
-      description: "National Identification Number"
+      description: "National Identification Number",
     },
     {
       name: "Voter's Card",
       icon: FileText,
       color: "#8B5CF6",
-      description: "Official voter identification"
+      description: "Official voter identification",
     },
   ];
-
-  // Custom Toast Styles
-  const toastStyles = `
-    .custom-toast-success {
-      background: linear-gradient(135deg, #111827 0%, #000000 100%) !important;
-      color: #22C55E !important;
-      border: 1px solid #22C55E !important;
-      border-radius: 16px !important;
-      backdrop-filter: blur(10px) !important;
-    }
-    .custom-toast-error {
-      background: linear-gradient(135deg, #111827 0%, #000000 100%) !important;
-      color: #EF4444 !important;
-      border: 1px solid #EF4444 !important;
-      border-radius: 16px !important;
-      backdrop-filter: blur(10px) !important;
-    }
-    .custom-toast-info {
-      background: linear-gradient(135deg, #111827 0%, #000000 100%) !important;
-      color: #EAB308 !important;
-      border: 1px solid #EAB308 !important;
-      border-radius: 16px !important;
-      backdrop-filter: blur(10px) !important;
-    }
-    .Toastify__progress-bar {
-      background: #EAB308 !important;
-    }
-  `;
 
   // Fetch verification status on mount
   useEffect(() => {
@@ -95,30 +65,12 @@ const VerifyPage = () => {
         const { data } = await axiosInstance.get("/verification-status");
         setIsVerified(data.verified ?? false);
         setIsPending(data.pending ?? false);
-        if (data.verified || data.pending) {
-          toast.info(
-            data.verified
-              ? "Your account is already verified."
-              : "Verification is pending review.",
-            { 
-              position: "top-center",
-              className: "custom-toast-info"
-            }
-          );
-        }
       } catch (error) {
         console.error("Error fetching verification status:", {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
         });
-        toast.error(
-          error.response?.data?.message || "Failed to load verification status.",
-          { 
-            position: "top-center",
-            className: "custom-toast-error"
-          }
-        );
       } finally {
         setLoading(false);
       }
@@ -132,7 +84,7 @@ const VerifyPage = () => {
     setProgress(0);
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    
+
     let progress = 0;
     const interval = setInterval(() => {
       progress += 10;
@@ -165,10 +117,6 @@ const VerifyPage = () => {
       frontProgress !== 100 ||
       backProgress !== 100
     ) {
-      toast.error("Please upload both front and back images completely.", {
-        position: "top-center",
-        className: "custom-toast-error"
-      });
       return;
     }
 
@@ -181,11 +129,6 @@ const VerifyPage = () => {
 
       await axiosInstance.post("/verify-document", formData, {
         headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      toast.success(`${selectedOption} submitted successfully for review.`, {
-        position: "top-center",
-        className: "custom-toast-success"
       });
 
       // Reset form
@@ -206,13 +149,6 @@ const VerifyPage = () => {
         data: error.response?.data,
         message: error.message,
       });
-      toast.error(
-        error.response?.data?.message || "Failed to submit document for verification.",
-        { 
-          position: "top-center",
-          className: "custom-toast-error"
-        }
-      );
     } finally {
       setLoading(false);
     }
@@ -231,7 +167,14 @@ const VerifyPage = () => {
     if (backInputRef.current) backInputRef.current.value = "";
   };
 
-  const UploadArea = ({ title, progress, preview, inputRef, side, disabled }) => (
+  const UploadArea = ({
+    title,
+    progress,
+    preview,
+    inputRef,
+    side,
+    disabled,
+  }) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -243,8 +186,10 @@ const VerifyPage = () => {
       </h3>
 
       {/* Upload Area */}
-      <div className="border-2 border-dashed border-gray-600 rounded-2xl p-8 text-center hover:border-yellow-500/50 transition-all duration-300 cursor-pointer"
-           onClick={() => !disabled && inputRef.current?.click()}>
+      <div
+        className="border-2 border-dashed border-gray-600 rounded-2xl p-8 text-center hover:border-yellow-500/50 transition-all duration-300 cursor-pointer"
+        onClick={() => !disabled && inputRef.current?.click()}
+      >
         <input
           type="file"
           accept="image/*"
@@ -254,16 +199,14 @@ const VerifyPage = () => {
           className="hidden"
           disabled={disabled}
         />
-        
+
         {!preview ? (
           <div className="space-y-3">
             <Upload className="mx-auto text-gray-400" size={40} />
             <p className="text-gray-400 text-sm">
               Click to upload {side === "front" ? "front" : "back"} image
             </p>
-            <p className="text-gray-500 text-xs">
-              PNG, JPG, JPEG up to 5MB
-            </p>
+            <p className="text-gray-500 text-xs">PNG, JPG, JPEG up to 5MB</p>
           </div>
         ) : (
           <div className="relative">
@@ -305,15 +248,13 @@ const VerifyPage = () => {
 
   return (
     <div className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl p-8 border border-gray-800 backdrop-blur-sm mb-8">
-      {/* Inject custom toast styles */}
-      <style>{toastStyles}</style>
-      <ToastContainer />
-
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
           <Shield className="mr-3 text-yellow-500" size={24} />
-          <h2 className="text-xl font-bold text-white">Identity Verification</h2>
+          <h2 className="text-xl font-bold text-white">
+            Identity Verification
+          </h2>
         </div>
         {(isVerified || isPending) && (
           <div className="flex items-center text-green-500 text-sm">
@@ -335,11 +276,13 @@ const VerifyPage = () => {
               <CheckCircle className="text-green-500 mr-3" size={20} />
               <div>
                 <h3 className="text-green-500 font-semibold">
-                  {isVerified ? "Verification Complete" : "Verification Pending"}
+                  {isVerified
+                    ? "Verification Complete"
+                    : "Verification Pending"}
                 </h3>
                 <p className="text-gray-400 text-sm">
-                  {isVerified 
-                    ? "Your account has been successfully verified." 
+                  {isVerified
+                    ? "Your account has been successfully verified."
                     : "Your documents are under review. This may take 24-48 hours."}
                 </p>
               </div>
@@ -349,7 +292,8 @@ const VerifyPage = () => {
       </AnimatePresence>
 
       <p className="text-gray-400 text-center mb-6">
-        Ensure your document is valid, clearly visible, and matches your account information.
+        Ensure your document is valid, clearly visible, and matches your account
+        information.
       </p>
 
       {/* Disabled if verified or pending */}
@@ -405,15 +349,19 @@ const VerifyPage = () => {
                     whileTap={{ scale: 0.98 }}
                     disabled={loading}
                   >
-                    <div 
+                    <div
                       className="p-3 rounded-xl mr-4"
                       style={{ backgroundColor: `${option.color}20` }}
                     >
                       <option.icon size={20} style={{ color: option.color }} />
                     </div>
                     <div className="text-left">
-                      <h3 className="text-white font-semibold">{option.name}</h3>
-                      <p className="text-gray-400 text-sm">{option.description}</p>
+                      <h3 className="text-white font-semibold">
+                        {option.name}
+                      </h3>
+                      <p className="text-gray-400 text-sm">
+                        {option.description}
+                      </p>
                     </div>
                   </motion.button>
                 ))}
@@ -453,9 +401,7 @@ const VerifyPage = () => {
                       Upload {selectedOption}
                     </h3>
                   </div>
-                  <div className="text-yellow-500 text-sm">
-                    Required
-                  </div>
+                  <div className="text-yellow-500 text-sm">Required</div>
                 </div>
 
                 {/* Upload Areas */}
@@ -485,13 +431,18 @@ const VerifyPage = () => {
                   className="p-4 rounded-2xl border border-yellow-500/30 bg-gradient-to-r from-yellow-500/10 to-black/50 backdrop-blur-sm"
                 >
                   <div className="flex items-start">
-                    <AlertCircle className="text-yellow-500 mr-3 mt-0.5" size={16} />
+                    <AlertCircle
+                      className="text-yellow-500 mr-3 mt-0.5"
+                      size={16}
+                    />
                     <div>
                       <h4 className="text-yellow-500 text-sm font-semibold mb-1">
                         Security Notice
                       </h4>
                       <p className="text-gray-400 text-xs">
-                        Your documents are encrypted and securely stored. We never share your personal information with third parties.
+                        Your documents are encrypted and securely stored. We
+                        never share your personal information with third
+                        parties.
                       </p>
                     </div>
                   </div>
@@ -503,7 +454,12 @@ const VerifyPage = () => {
                   className="w-full flex items-center justify-center bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-4 px-6 rounded-xl hover:from-green-400 hover:to-green-500 transition-all duration-300 shadow-lg disabled:from-gray-700 disabled:to-gray-800 disabled:cursor-not-allowed"
                   whileHover={!loading ? { scale: 1.02 } : {}}
                   whileTap={!loading ? { scale: 0.98 } : {}}
-                  disabled={loading || uploading || frontProgress !== 100 || backProgress !== 100}
+                  disabled={
+                    loading ||
+                    uploading ||
+                    frontProgress !== 100 ||
+                    backProgress !== 100
+                  }
                 >
                   {loading ? (
                     <>

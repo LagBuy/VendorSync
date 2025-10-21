@@ -5,7 +5,14 @@ import "react-toastify/dist/ReactToastify.css";
 import { axiosInstance } from "../axios-instance/axios-instance";
 import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
-import { CreditCard, DollarSign, ShoppingCart, TrendingUp, Sparkles, Zap } from "lucide-react";
+import {
+  CreditCard,
+  DollarSign,
+  ShoppingCart,
+  TrendingUp,
+  Sparkles,
+  Zap,
+} from "lucide-react";
 import SalesOverviewChart from "../components/overview/SalesOverviewChart";
 import SalesByCategoryChart from "../components/sales/SalesByCategoryChart";
 import DailySalesTrend from "../components/sales/DailySalesTrend";
@@ -34,19 +41,8 @@ const SalesPage = () => {
           position: "top-center",
           className: "custom-toast-success",
         });
-      } catch (error) {
-        console.error("Error fetching sales stats:", {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message,
-        });
-        toast.error(
-          error.response?.data?.message || "Failed to load sales stats.",
-          { 
-            position: "top-center",
-            className: "custom-toast-error",
-          }
-        );
+      } catch {
+        // Error handling without error messages
       } finally {
         setLoading(false);
       }
@@ -64,13 +60,6 @@ const SalesPage = () => {
       border-radius: 16px !important;
       backdrop-filter: blur(10px) !important;
     }
-    .custom-toast-error {
-      background: linear-gradient(135deg, #111827 0%, #000000 100%) !important;
-      color: #EF4444 !important;
-      border: 1px solid #EF4444 !important;
-      border-radius: 16px !important;
-      backdrop-filter: blur(10px) !important;
-    }
     .Toastify__progress-bar {
       background: #EAB308 !important;
     }
@@ -80,7 +69,7 @@ const SalesPage = () => {
     <div className="flex-1 overflow-auto relative z-10 bg-black min-h-screen">
       {/* Inject custom toast styles */}
       <style>{toastStyles}</style>
-      
+
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -95,8 +84,8 @@ const SalesPage = () => {
         />
       </div>
 
-      <Header 
-        title="Sales Analytics" 
+      <Header
+        title="Sales Analytics"
         className="text-white font-bold text-4xl mb-8 relative z-10"
         icon={<TrendingUp className="text-yellow-500 mr-3" />}
       />
@@ -188,11 +177,15 @@ const SalesPage = () => {
                   value={`${salesStats.salesGrowth}%`}
                   color={salesStats.salesGrowth >= 0 ? "#22C55E" : "#EF4444"}
                   className={`bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl transition-all duration-500 border border-gray-800 text-white text-xl backdrop-blur-sm ${
-                    salesStats.salesGrowth >= 0 
-                      ? "hover:shadow-green-500/20 hover:border-green-500/50" 
+                    salesStats.salesGrowth >= 0
+                      ? "hover:shadow-green-500/20 hover:border-green-500/50"
                       : "hover:shadow-red-500/20 hover:border-red-500/50"
                   }`}
-                  iconBg={salesStats.salesGrowth >= 0 ? "bg-green-500/20" : "bg-red-500/20"}
+                  iconBg={
+                    salesStats.salesGrowth >= 0
+                      ? "bg-green-500/20"
+                      : "bg-red-500/20"
+                  }
                 />
               </motion.div>
             </>
@@ -208,7 +201,9 @@ const SalesPage = () => {
         >
           <div className="flex items-center mb-6">
             <Zap className="mr-3 text-yellow-500" size={24} />
-            <h3 className="text-xl font-bold text-white">Sales Performance Overview</h3>
+            <h3 className="text-xl font-bold text-white">
+              Sales Performance Overview
+            </h3>
           </div>
           <SalesOverviewChart />
         </motion.div>
@@ -223,7 +218,9 @@ const SalesPage = () => {
           <div className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl p-8 border border-gray-800 backdrop-blur-sm">
             <div className="flex items-center mb-6">
               <ShoppingCart className="mr-3 text-green-500" size={24} />
-              <h3 className="text-xl font-bold text-white">Sales by Category</h3>
+              <h3 className="text-xl font-bold text-white">
+                Sales by Category
+              </h3>
             </div>
             <SalesByCategoryChart />
           </div>
@@ -231,7 +228,9 @@ const SalesPage = () => {
           <div className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl p-8 border border-gray-800 backdrop-blur-sm">
             <div className="flex items-center mb-6">
               <TrendingUp className="mr-3 text-yellow-500" size={24} />
-              <h3 className="text-xl font-bold text-white">Daily Sales Trend</h3>
+              <h3 className="text-xl font-bold text-white">
+                Daily Sales Trend
+              </h3>
             </div>
             <DailySalesTrend />
           </div>
@@ -248,15 +247,20 @@ const SalesPage = () => {
             <div className="flex items-center">
               <Sparkles className="text-yellow-500 mr-3" size={24} />
               <div>
-                <h4 className="text-lg font-bold text-white">Sales Performance</h4>
+                <h4 className="text-lg font-bold text-white">
+                  Sales Performance
+                </h4>
                 <p className="text-gray-400">
-                  {salesStats.salesGrowth >= 0 ? "📈 Trending Up" : "📉 Needs Attention"}
+                  {salesStats.salesGrowth >= 0
+                    ? "📈 Trending Up"
+                    : "📉 Needs Attention"}
                 </p>
               </div>
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold text-yellow-500">
-                {salesStats.salesGrowth >= 0 ? "+" : ""}{salesStats.salesGrowth}%
+                {salesStats.salesGrowth >= 0 ? "+" : ""}
+                {salesStats.salesGrowth}%
               </p>
               <p className="text-sm text-gray-400">Growth Rate</p>
             </div>

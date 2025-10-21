@@ -3,7 +3,9 @@ import Cookies from "js-cookie";
 import { toast } from "react-toastify";
 
 // Ensure baseURL has no trailing slash
-const baseURL = (import.meta.env.VITE_BASE_URL || "https://api.lagbuy.com/api/v1").replace(/\/+$/, "");
+const baseURL = (
+  import.meta.env.VITE_BASE_URL || "https://api.lagbuy.com/api/v1"
+).replace(/\/+$/, "");
 
 const axiosInstance = axios.create({
   baseURL,
@@ -41,9 +43,10 @@ axiosInstance.interceptors.response.use(
       Cookies.remove("jwt-token");
       toast.error("Session expired. Please log in again.");
       window.location.replace("/auth");
-      
     } else if (err.response?.status === 403) {
-      toast.error("You do not have permission to perform this action. Please contact your administrator.");
+      toast.error(
+        "You do not have permission to perform this action. Please contact your administrator."
+      );
     }
     return Promise.reject(err);
   }

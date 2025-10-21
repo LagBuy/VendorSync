@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, Eye, CheckCircle } from "lucide-react";
-import { toast } from "react-toastify";
 import { axiosInstance } from "../../axios-instance/axios-instance";
 
 const OrdersTable = () => {
@@ -18,17 +17,11 @@ const OrdersTable = () => {
         if (Array.isArray(data)) {
           fetchedOrders = data;
         } else {
-          console.error("Unexpected order data format:", data);
-          toast.error("Unexpected data format from server. Please try again.");
+          fetchedOrders = [];
         }
         setOrders(fetchedOrders);
-      } catch (error) {
-        console.error("Error fetching orders:", {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message,
-        });
-        toast.error(error.response?.data?.message || "Failed to load orders.");
+      } catch {
+        // Error handling without error messages
       } finally {
         setIsLoading(false);
       }
@@ -46,22 +39,21 @@ const OrdersTable = () => {
       // Fetch order details
       const { data: orderData } = await axiosInstance.get(`/orders/${id}/`);
       if (orderData.status === "Delivered") {
-        toast.error("Order is already delivered.");
         return;
       }
 
       // Fetch OTP to confirm order status:
-      const { data: statusData } = await axiosInstance.get(`/orders/${id}/status/`);
+      const { data: statusData } = await axiosInstance.get(
+        `/orders/${id}/status/`
+      );
       const backendOtp = statusData.otp;
 
       if (!backendOtp) {
-        toast.error("No OTP available for this order.");
         return;
       }
 
       const userOtp = prompt("Enter OTP to confirm delivery:");
       if (!userOtp) {
-        toast.error("Please enter an OTP.");
         return;
       }
 
@@ -77,14 +69,8 @@ const OrdersTable = () => {
           order.id === id ? { ...order, status: "Delivered" } : order
         )
       );
-      toast.success("Order confirmed successfully!");
-    } catch (error) {
-      console.error("Error confirming delivery:", {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-      });
-      toast.error(error.response?.data?.message || "Failed to confirm delivery.");
+    } catch {
+      // Error handling without error messages
     }
   };
 
@@ -118,7 +104,9 @@ const OrdersTable = () => {
 
       <div className="overflow-x-auto">
         {isLoading ? (
-          <div className="text-gray-400 text-center py-8">Loading orders...</div>
+          <div className="text-gray-400 text-center py-8">
+            Loading orders...
+          </div>
         ) : filteredOrders.length === 0 ? (
           <div className="text-gray-400 text-center py-8">No orders found.</div>
         ) : (

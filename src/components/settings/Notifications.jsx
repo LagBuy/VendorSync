@@ -1,9 +1,15 @@
 import { useState, useEffect } from "react";
-import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import { axiosInstance } from "../../axios-instance/axios-instance";
 import SettingSection from "./SettingSection";
-import { Bell, Sparkles, Volume2, Mail, MessageSquare, Smartphone } from "lucide-react";
+import {
+  Bell,
+  Sparkles,
+  Volume2,
+  Mail,
+  MessageSquare,
+  Smartphone,
+} from "lucide-react";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState({
@@ -23,36 +29,36 @@ const Notifications = () => {
       label: "Push Notifications",
       description: "Receive real-time alerts in your browser",
       icon: Bell,
-      color: "#EAB308"
+      color: "#EAB308",
     },
     {
       key: "email",
       label: "Email Notifications",
       description: "Get updates delivered to your inbox",
       icon: Mail,
-      color: "#22C55E"
+      color: "#22C55E",
     },
     {
       key: "sms",
       label: "SMS Notifications",
       description: "Text message alerts for urgent updates",
       icon: MessageSquare,
-      color: "#3B82F6"
+      color: "#3B82F6",
     },
     {
       key: "whatsapp",
       label: "WhatsApp Notifications",
       description: "Instant messages for order updates",
       icon: Smartphone,
-      color: "#25D366"
+      color: "#25D366",
     },
     {
       key: "whatsappb",
       label: "WhatsApp Business",
       description: "Professional business messaging",
       icon: Volume2,
-      color: "#075E54"
-    }
+      color: "#075E54",
+    },
   ];
 
   // Fetch notification settings on mount
@@ -68,17 +74,11 @@ const Notifications = () => {
           whatsapp: data.whatsapp ?? notifications.whatsapp,
           whatsappb: data.whatsappb ?? notifications.whatsappb,
         });
-        toast.success("Notification settings loaded successfully!", {
-          className: "custom-toast-success"
-        });
       } catch (error) {
         console.error("Error fetching notification settings:", {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
-        });
-        toast.error(error.response?.data?.message || "Failed to load notification settings.", {
-          className: "custom-toast-error"
         });
       } finally {
         setLoading(false);
@@ -89,23 +89,20 @@ const Notifications = () => {
   }, []);
 
   const handleToggle = async (key) => {
-    const updatedNotifications = { ...notifications, [key]: !notifications[key] };
+    const updatedNotifications = {
+      ...notifications,
+      [key]: !notifications[key],
+    };
     setNotifications(updatedNotifications);
     setSaving(true);
-    
+
     try {
       await axiosInstance.patch("/notification-settings", updatedNotifications);
-      toast.success("Notification settings updated successfully!", {
-        className: "custom-toast-success"
-      });
     } catch (error) {
       console.error("Error updating notification settings:", {
         status: error.response?.status,
         data: error.response?.data,
         message: error.message,
-      });
-      toast.error(error.response?.data?.message || "Failed to update notification settings.", {
-        className: "custom-toast-error"
       });
       // Revert on error
       setNotifications(notifications);
@@ -115,14 +112,22 @@ const Notifications = () => {
   };
 
   // Custom Toggle Switch Component
-  const ToggleSwitch = ({ label, description, isOn, onToggle, disabled, icon: Icon, color }) => (
-    <motion.div 
+  const ToggleSwitch = ({
+    label,
+    description,
+    isOn,
+    onToggle,
+    disabled,
+    icon: Icon,
+    color,
+  }) => (
+    <motion.div
       className="flex items-center justify-between p-4 rounded-2xl border border-gray-800 bg-gradient-to-r from-gray-900/50 to-black/50 backdrop-blur-sm hover:border-yellow-500/30 transition-all duration-300"
       whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300 }}
     >
       <div className="flex items-center space-x-4">
-        <div 
+        <div
           className="p-3 rounded-xl flex items-center justify-center"
           style={{ backgroundColor: `${color}20` }}
         >
@@ -133,17 +138,17 @@ const Notifications = () => {
           <p className="text-gray-400 text-sm">{description}</p>
         </div>
       </div>
-      
+
       <button
         onClick={onToggle}
         disabled={disabled || saving}
         className={`relative inline-flex items-center h-7 rounded-full w-14 transition-colors duration-300 ease-in-out focus:outline-none ${
-          isOn ? 'bg-green-500' : 'bg-gray-700'
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          isOn ? "bg-green-500" : "bg-gray-700"
+        } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
       >
         <motion.span
           className={`inline-block w-5 h-5 transform bg-white rounded-full shadow-lg ${
-            isOn ? 'translate-x-8' : 'translate-x-1'
+            isOn ? "translate-x-8" : "translate-x-1"
           }`}
           layout
           transition={{ type: "spring", stiffness: 500, damping: 30 }}
@@ -153,8 +158,8 @@ const Notifications = () => {
   );
 
   return (
-    <SettingSection 
-      icon={Bell} 
+    <SettingSection
+      icon={Bell}
       title="Notification Preferences"
       className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl p-8 border border-gray-800 backdrop-blur-sm"
     >
@@ -162,7 +167,9 @@ const Notifications = () => {
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center">
           <Bell className="mr-3 text-yellow-500" size={24} />
-          <h2 className="text-xl font-bold text-white">Notification Settings</h2>
+          <h2 className="text-xl font-bold text-white">
+            Notification Settings
+          </h2>
         </div>
         {!loading && (
           <div className="flex items-center text-green-500 text-sm">
@@ -182,7 +189,10 @@ const Notifications = () => {
             className="space-y-4"
           >
             {[...Array(5)].map((_, index) => (
-              <div key={index} className="flex items-center justify-between p-4 rounded-2xl border border-gray-800 bg-gradient-to-r from-gray-900/50 to-black/50">
+              <div
+                key={index}
+                className="flex items-center justify-between p-4 rounded-2xl border border-gray-800 bg-gradient-to-r from-gray-900/50 to-black/50"
+              >
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-gray-800 rounded-xl animate-pulse"></div>
                   <div className="space-y-2">
@@ -231,7 +241,9 @@ const Notifications = () => {
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                 className="w-5 h-5 border-2 border-yellow-500 border-t-transparent rounded-full mr-3"
               />
-              <span className="text-yellow-500 text-sm font-medium">Saving your preferences...</span>
+              <span className="text-yellow-500 text-sm font-medium">
+                Saving your preferences...
+              </span>
             </div>
           </motion.div>
         )}

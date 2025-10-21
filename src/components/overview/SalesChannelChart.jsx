@@ -24,8 +24,8 @@ const SalesChannelChart = () => {
     try {
       const response = await axiosInstance.get("/sales/channels");
       setSalesChannelData(response.data);
-    } catch (err) {
-      console.error("Error fetching sales channel data:", err);
+    } catch {
+      // onsole.error("Error fetching sales channel data:", err);
       setError("Failed to load sales data");
     } finally {
       setLoading(false);

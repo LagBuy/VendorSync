@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   AreaChart,
   Area,
@@ -10,26 +10,26 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { toast } from "react-toastify";
 import { axiosInstance } from "../../axios-instance/axios-instance";
+import { Target, TrendingUp, Sparkles, Calendar } from "lucide-react";
 
 const RevenueChart = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState("One Month");
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [inputTarget, setInputTarget] = useState("");
-  const [customTargets, setCustomTargets] = useState({
-    Today: null,
-    "3 Days": null,
-    "One Week": null,
-    "14 Days": null,
-    "One Month": null,
-    "3 Months": null,
-    "6 Months": null,
-    "9 Months": null,
-    "One Year": null,
-  });
-  const [error, setError] = useState("");
+
+  const timeRanges = [
+    "Today",
+    "3 Days",
+    "One Week",
+    "14 Days",
+    "One Month",
+    "3 Months",
+    "6 Months",
+    "9 Months",
+    "One Year",
+  ];
 
   useEffect(() => {
     const fetchRevenueData = async () => {
@@ -42,151 +42,227 @@ const RevenueChart = () => {
           ? result.map((item) => ({
               period: item.period,
               revenue: item.revenue,
-              target: customTargets[selectedTimeRange] ?? item.target,
+              target: item.target,
             }))
           : [];
         setData(chartData);
-      } catch (error) {
-        console.error("Failed to fetch revenue data:", {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message,
-        });
+      } catch {
         setData([]);
-        toast.error(error.response?.data?.message || "Failed to load revenue data.");
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchRevenueData();
-  }, [selectedTimeRange, customTargets]);
-
-  useEffect(() => {
-    if (error) {
-      const timeout = setTimeout(() => setError(""), 3000);
-      return () => clearTimeout(timeout);
-    }
-  }, [error]);
+  }, [selectedTimeRange]);
 
   const handleTargetSubmit = (e) => {
     e.preventDefault();
-    const value = parseFloat(inputTarget);
-    if (!inputTarget || isNaN(value) || value <= 0) {
-      setError("Please enter a positive target for the selected time frame.");
-      return;
-    }
-    setCustomTargets((prev) => ({
-      ...prev,
-      [selectedTimeRange]: value,
-    }));
     setInputTarget("");
-    setError("");
   };
 
   return (
     <motion.div
-      className="bg-gray-800 bg-opacity-50 backdrop-filter backdrop-blur-lg shadow-lg rounded-xl p-6 border border-gray-700 mb-8 relative"
-      initial={{ opacity: 0, y: 20 }}
+      className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl p-8 border-2 border-green-400/50 backdrop-blur-sm relative overflow-hidden"
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
+      transition={{ duration: 0.6 }}
     >
-      <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
-        <h2 className="text-xl font-semibold text-gray-100">
-          Revenue vs Target
-        </h2>
+      {/* Animated Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-yellow-400"></div>
+      <div className="absolute -top-20 -right-20 w-40 h-40 bg-green-500 rounded-full opacity-5 blur-xl"></div>
+      <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-yellow-500 rounded-full opacity-5 blur-xl"></div>
+
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4 relative z-10">
+        <div className="flex items-center">
+          <Target className="mr-3 text-yellow-500" size={28} />
+          <div>
+            <h2 className="text-2xl font-bold text-white">Revenue Analytics</h2>
+            <p className="text-gray-400 text-sm">
+              Track performance against targets
+            </p>
+          </div>
+        </div>
 
         <div className="flex flex-col sm:flex-row gap-4 items-center">
+          {/* Target Input */}
           <form
             onSubmit={handleTargetSubmit}
-            className="flex gap-2 items-center"
+            className="flex gap-3 items-center"
           >
-            <input
-              type="number"
-              placeholder={`Target for ${selectedTimeRange}`}
-              value={inputTarget}
-              onChange={(e) => setInputTarget(e.target.value)}
-              className="bg-gray-700 text-white rounded-md px-3 py-1 w-44 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="relative">
+              <input
+                type="number"
+                placeholder={`Set ${selectedTimeRange} target...`}
+                value={inputTarget}
+                onChange={(e) => setInputTarget(e.target.value)}
+                className="bg-gray-800 text-white rounded-xl px-4 py-3 pl-12 w-48 focus:outline-none focus:ring-2 focus:ring-green-400 border-2 border-gray-700 focus:border-green-400 transition-all duration-300"
+              />
+              <TrendingUp
+                className="absolute left-4 top-3 text-gray-400"
+                size={18}
+              />
+            </div>
             <button
               type="submit"
-              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-400 hover:to-green-500 transform hover:scale-105 transition-all duration-300 shadow-lg border-2 border-green-400"
             >
-              Apply
+              Set Target
             </button>
           </form>
 
-          <select
-            className="bg-gray-700 text-white rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={selectedTimeRange}
-            onChange={(e) => setSelectedTimeRange(e.target.value)}
-          >
-            <option>Today</option>
-            <option>3 Days</option>
-            <option>One Week</option>
-            <option>14 Days</option>
-            <option>One Month</option>
-            <option>3 Months</option>
-            <option>6 Months</option>
-            <option>9 Months</option>
-            <option>One Year</option>
-          </select>
+          {/* Time Range Selector */}
+          <div className="relative">
+            <select
+              className="bg-gray-800 text-white rounded-xl px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400 border-2 border-gray-700 focus:border-yellow-400 transition-all duration-300 appearance-none cursor-pointer"
+              value={selectedTimeRange}
+              onChange={(e) => setSelectedTimeRange(e.target.value)}
+            >
+              {timeRanges.map((range) => (
+                <option key={range} value={range}>
+                  {range}
+                </option>
+              ))}
+            </select>
+            <Calendar
+              className="absolute right-3 top-3 text-yellow-400 pointer-events-none"
+              size={18}
+            />
+          </div>
         </div>
       </div>
 
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute top-2 right-4 bg-red-600 text-white px-4 py-2 rounded shadow-lg z-50"
-          >
-            {error}
-          </motion.div>
+      {/* Chart Container */}
+      <div className="relative z-10">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center h-[400px]">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full mb-4"
+            />
+            <p className="text-gray-400 text-lg">Loading revenue data...</p>
+          </div>
+        ) : data.length > 0 ? (
+          <div style={{ width: "100%", height: 400 }}>
+            <ResponsiveContainer>
+              <AreaChart data={data}>
+                <defs>
+                  <linearGradient
+                    id="revenueGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor="#EAB308" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#EAB308" stopOpacity={0.1} />
+                  </linearGradient>
+                  <linearGradient
+                    id="targetGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor="#22C55E" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#22C55E" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#374151"
+                  opacity={0.3}
+                />
+                <XAxis
+                  dataKey="period"
+                  stroke="#9CA3AF"
+                  fontSize={12}
+                  tick={{ fill: "#9CA3AF" }}
+                />
+                <YAxis
+                  stroke="#9CA3AF"
+                  fontSize={12}
+                  tick={{ fill: "#9CA3AF" }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "rgba(17, 24, 39, 0.9)",
+                    border: "1px solid #22C55E",
+                    borderRadius: "12px",
+                    backdropFilter: "blur(10px)",
+                    color: "#FFFFFF",
+                  }}
+                />
+                <Legend
+                  wrapperStyle={{
+                    paddingTop: "20px",
+                    color: "#E5E7EB",
+                    fontSize: "12px",
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#EAB308"
+                  fill="url(#revenueGradient)"
+                  strokeWidth={3}
+                  name="Actual Revenue"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="target"
+                  stroke="#22C55E"
+                  fill="url(#targetGradient)"
+                  strokeWidth={3}
+                  name="Revenue Target"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-[400px] text-center">
+            <div className="w-20 h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mb-4">
+              <TrendingUp className="text-yellow-500" size={32} />
+            </div>
+            <h3 className="text-white font-semibold text-xl mb-2">
+              No Revenue Data
+            </h3>
+            <p className="text-gray-400 max-w-md">
+              Revenue data will appear here once sales are recorded for the
+              selected period.
+            </p>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
 
-      {isLoading ? (
-        <div className="flex justify-center items-center h-[400px] text-gray-400">
-          Loading...
-        </div>
-      ) : data.length > 0 ? (
-        <div style={{ width: "100%", height: 400 }}>
-          <ResponsiveContainer>
-            <AreaChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="period" stroke="#9CA3AF" />
-              <YAxis stroke="#9CA3AF" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "rgba(31, 41, 55, 0.8)",
-                  borderColor: "#4B5563",
-                }}
-                itemStyle={{ color: "#E5E7EB" }}
-              />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="revenue"
-                stroke="#8B5CF6"
-                fill="#8B5CF6"
-                fillOpacity={0.3}
-              />
-              <Area
-                type="monotone"
-                dataKey="target"
-                stroke="#10B981"
-                fill="#10B981"
-                fillOpacity={0.3}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      ) : (
-        <div className="flex justify-center items-center h-[400px] text-gray-400">
-          No revenue data available.
-        </div>
+      {/* Performance Summary */}
+      {!isLoading && data.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-6 pt-6 border-t border-gray-800 grid grid-cols-1 md:grid-cols-3 gap-4"
+        >
+          <div className="text-center">
+            <p className="text-gray-400 text-sm">Total Periods</p>
+            <p className="text-yellow-500 font-bold text-xl">{data.length}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-gray-400 text-sm">Time Range</p>
+            <p className="text-green-500 font-bold text-xl">
+              {selectedTimeRange}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-gray-400 text-sm">Status</p>
+            <div className="flex items-center justify-center text-yellow-500">
+              <Sparkles size={16} className="mr-1" />
+              <span className="font-bold">Active</span>
+            </div>
+          </div>
+        </motion.div>
       )}
     </motion.div>
   );
