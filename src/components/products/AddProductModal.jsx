@@ -12,7 +12,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
     price: "",
     stock_quantity: "",
     description: "",
-    image: "", // Consistent empty string for single image
+    image: "",
   });
   const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState("");
@@ -77,21 +77,13 @@ const AddProductModal = ({ onCancel, onAdd }) => {
 
   // Utility functions
   const validateImageFile = (file) => {
-    const validImageTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-    ];
+    const validImageTypes = ["image/jpeg", "image/jpg", "image/png"];
 
     if (
       !file.type.startsWith("image/") ||
       !validImageTypes.includes(file.type)
     ) {
-      throw new Error(
-        "Please upload a valid image file (JPEG, PNG, GIF, WebP)."
-      );
+      throw new Error("Please upload a valid image file (JPEG, JPG or PNG).");
     }
 
     if (file.size > MAX_FILE_SIZE) {
@@ -351,16 +343,19 @@ const AddProductModal = ({ onCancel, onAdd }) => {
       return;
     }
 
-    // Prepare product data
-    const productData = {
-      name: formData.name.trim(),
-      description: formData.description.trim(),
-      price: priceValue,
-      stock_quantity: stockQuantityValue,
-      verified: "false",
-      categories: [finalCategoryName],
-      images: formData.image ? [formData.image] : [], // Convert to array for backend
-    };
+    // FIX: Create FormData instead of JSON for product creation
+    const productFormData = new FormData();
+    productFormData.append("name", formData.name.trim());
+    productFormData.append("description", formData.description.trim());
+    productFormData.append("price", priceValue.toString());
+    productFormData.append("stock_quantity", stockQuantityValue.toString());
+    productFormData.append("verified", "false");
+    productFormData.append("categories", finalCategoryName);
+
+    // FIX: Append the image URL in the format backend expects
+    if (formData.image) {
+      productFormData.append("images", formData.image);
+    }
 
     try {
       const token = Cookies.get("jwt-token");
@@ -372,15 +367,23 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         return;
       }
 
-      const { data } = await axiosInstance.post("/products", productData);
+      // FIX: Send as multipart/form-data instead of JSON
+      const { data } = await axiosInstance.post("/products/", productFormData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       if (data) {
         const completeProduct = {
-          ...data,
-          images: data.images || [formData.image].filter(Boolean),
-          price: data.price || priceValue,
-          stock_quantity: data.stock_quantity || stockQuantityValue,
-          categories: data.categories || [finalCategoryName],
+          ...data.data, // Note: Use data.data since your response has data property
+          images:
+            data.data.images && data.data.images.length > 0
+              ? data.data.images
+              : [formData.image].filter(Boolean),
+          price: data.data.price || priceValue,
+          stock_quantity: data.data.stock_quantity || stockQuantityValue,
+          categories: data.data.categories || [finalCategoryName],
         };
 
         onAdd(completeProduct);
