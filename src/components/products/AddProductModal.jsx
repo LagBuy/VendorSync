@@ -352,10 +352,16 @@ const AddProductModal = ({ onCancel, onAdd }) => {
     productFormData.append("verified", "false");
     productFormData.append("categories", finalCategoryName);
 
-    // FIX: Append the image URL in the format backend expects
+    // If this one works, leave the commented code the way it is:
     if (formData.image) {
-      productFormData.append("images", formData.image);
+      productFormData.append("image_urls", [formData.image]);
     }
+
+    // if the code above does not work, you can uncomment the particular one after it:
+
+    // if(formData.image) {
+    //   productFormData.append("image_urls", JSON.stringify([formData.image]))
+    // }
 
     try {
       const token = Cookies.get("jwt-token");

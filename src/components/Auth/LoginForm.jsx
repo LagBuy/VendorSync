@@ -37,7 +37,7 @@ const LoginForm = ({ onSwitch, onLogin }) => {
     }
 
     const reqBody = {
-      email,
+       email,
       password,
     };
 
@@ -47,10 +47,10 @@ const LoginForm = ({ onSwitch, onLogin }) => {
 
       console.log(access);
 
-      Cookies.set("jwt-token", access, { expires: 7 });
+      Cookies.set("jwt-token", access, { expires: 3 });
 
       if (rememberMe) {
-        Cookies.set("savedEmail", email, { expires: 7 });
+        Cookies.set("savedEmail", email, { expires: 3 });
       } else {
         Cookies.remove("savedEmail");
       }

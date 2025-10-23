@@ -19,6 +19,29 @@ const OverViewPage = () => {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState({ show: false, message: "" });
 
+  // Function to format Naira amounts with proper formatting
+  const formatNaira = (amount) => {
+    if (!amount && amount !== 0) return "₦0.00";
+
+    // Ensure it's a number
+    const numAmount = Number(amount);
+    if (isNaN(numAmount)) return "₦0.00";
+
+    // Format with commas and 2 decimal places
+    return new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: "NGN",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(numAmount);
+  };
+
+  // Function to format numbers with commas (for non-currency values)
+  const formatNumber = (number) => {
+    if (!number && number !== 0) return "0";
+    return new Intl.NumberFormat("en-NG").format(Number(number));
+  };
+
   const fetchOverviewData = async () => {
     setLoading(true);
     try {
@@ -82,7 +105,8 @@ const OverViewPage = () => {
   }, []);
 
   const convertToNaira = (usdAmount) => {
-    return Math.round(usdAmount * exchangeRate);
+    const nairaAmount = usdAmount * exchangeRate;
+    return formatNaira(nairaAmount);
   };
 
   const calculateConversionRate = (newCustomers, totalVisitors = 1000) => {
@@ -162,9 +186,7 @@ const OverViewPage = () => {
                 <StatCard
                   name="Total Sales"
                   icon={Zap}
-                  value={`₦${convertToNaira(
-                    stats.totalSales
-                  ).toLocaleString()}`}
+                  value={convertToNaira(stats.totalSales)}
                   color="#EAB308"
                   className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl hover:shadow-yellow-500/20 transition-all duration-500 border border-gray-800 hover:border-yellow-500/50 text-white text-xl backdrop-blur-sm"
                   iconBg="bg-yellow-500/20"
@@ -179,7 +201,7 @@ const OverViewPage = () => {
                 <StatCard
                   name="New Customers"
                   icon={Users}
-                  value={stats.newCustomers}
+                  value={formatNumber(stats.newCustomers)}
                   color="#22C55E"
                   className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl hover:shadow-green-500/20 transition-all duration-500 border border-gray-800 hover:border-green-500/50 text-white text-xl backdrop-blur-sm"
                   iconBg="bg-green-500/20"
@@ -194,7 +216,7 @@ const OverViewPage = () => {
                 <StatCard
                   name="Total Products"
                   icon={ShoppingBag}
-                  value={stats.totalProducts}
+                  value={formatNumber(stats.totalProducts)}
                   color="#EAB308"
                   className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl hover:shadow-yellow-500/20 transition-all duration-500 border border-gray-800 hover:border-yellow-500/50 text-white text-xl backdrop-blur-sm"
                   iconBg="bg-yellow-500/20"
@@ -267,13 +289,10 @@ const OverViewPage = () => {
                 <p className="text-white font-semibold">
                   Current Exchange Rate:{" "}
                   <span className="text-green-500">
-                    1 USD = {exchangeRate?.toFixed(2)} NGN
+                    1 USD = {formatNaira(exchangeRate)}
                   </span>
                 </p>
               </div>
-              <p className="text-gray-400 text-sm">
-                Real-time rates applied to all calculations
-              </p>
             </div>
           </motion.div>
         )}

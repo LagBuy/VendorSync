@@ -2,12 +2,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
-import { AlertTriangle, Package, TrendingUp, DollarSign, Sparkles, Zap, ArrowUpRight, ShoppingCart } from "lucide-react";
+import {
+  AlertTriangle,
+  Package,
+  TrendingUp,
+  DollarSign,
+  Sparkles,
+  Zap,
+  ArrowUpRight,
+  ShoppingCart,
+} from "lucide-react";
 import CategoryDistributionChart from "../components/overview/CategoryDistributionChart";
 import SalesTrendChart from "../components/products/SalesTrendChart";
 import ProductsTable from "../components/products/ProductsTable";
 import { axiosInstance } from "../axios-instance/axios-instance";
-import { toast } from "react-toastify";
 import axios from "axios";
 
 const ProductsPage = () => {
@@ -29,7 +37,9 @@ const ProductsPage = () => {
         const [productsRes, lowStockRes, rateRes] = await Promise.all([
           axiosInstance.get("/products/"),
           axiosInstance.get("/vendors/lowstockcount/"),
-          axios.get("https://api.exchangerate.host/latest?base=USD&symbols=NGN"),
+          axios.get(
+            "https://api.exchangerate.host/latest?base=USD&symbols=NGN"
+          ),
         ]);
 
         const productsData = productsRes.data?.data || productsRes.data || [];
@@ -38,10 +48,13 @@ const ProductsPage = () => {
         const exchangeRateValue = rateRes.data.rates.NGN;
         const exchangeRateTime = rateRes.data.date;
 
-        const sortedBySales = [...productsData].sort((a, b) => (b.sales || 0) - (a.sales || 0));
-        const lowStockItems = lowStockData.length > 0 
-          ? lowStockData.slice(0, 5)
-          : productsData.filter((p) => (p.stock || 0) < 10).slice(0, 5);
+        const sortedBySales = [...productsData].sort(
+          (a, b) => (b.sales || 0) - (a.sales || 0)
+        );
+        const lowStockItems =
+          lowStockData.length > 0
+            ? lowStockData.slice(0, 5)
+            : productsData.filter((p) => (p.stock || 0) < 10).slice(0, 5);
 
         setProducts(productsData);
         setTopSelling(sortedBySales.slice(0, 5));
@@ -56,11 +69,12 @@ const ProductsPage = () => {
           data: err.response?.data,
           message: err.message,
         });
-        toast.error(err.response?.data?.detail || "Failed to fetch products or low stock data. Please check your authentication or permissions.");
 
         if (err.response?.config?.url.includes("lowstockcount")) {
           const productsData = products.length > 0 ? products : [];
-          const lowStockItems = productsData.filter((p) => (p.stock || 0) < 10).slice(0, 5);
+          const lowStockItems = productsData
+            .filter((p) => (p.stock || 0) < 10)
+            .slice(0, 5);
           setLowStock(lowStockItems);
           setLowStockCount(lowStockItems.length);
         }
@@ -99,7 +113,9 @@ const ProductsPage = () => {
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
             className="w-16 h-16 border-4 border-yellow-500 border-t-transparent rounded-full mx-auto mb-4"
           />
-          <p className="text-white text-xl font-semibold">Loading Products...</p>
+          <p className="text-white text-xl font-semibold">
+            Loading Products...
+          </p>
         </motion.div>
       </div>
     );
@@ -121,8 +137,8 @@ const ProductsPage = () => {
         />
       </div>
 
-      <Header 
-        title="Products Dashboard" 
+      <Header
+        title="Products Dashboard"
         className="text-white font-bold text-4xl mb-8 relative z-10"
         icon={<Sparkles className="text-yellow-500 mr-3" />}
       />
@@ -149,7 +165,7 @@ const ProductsPage = () => {
               iconBg="bg-green-500/20"
             />
           </motion.div>
-          
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -173,7 +189,7 @@ const ProductsPage = () => {
                 animate={{ scale: [1, 1.5, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               />
-              
+
               <AnimatePresence>
                 {showTopToast && (
                   <motion.div
@@ -192,8 +208,8 @@ const ProductsPage = () => {
                       </div>
                       <ul className="space-y-3">
                         {topSelling.map((product, index) => (
-                          <motion.li 
-                            key={index} 
+                          <motion.li
+                            key={index}
                             className="flex items-center justify-between text-white hover:text-yellow-500 transition-colors duration-300 group/item"
                             whileHover={{ x: 5 }}
                           >
@@ -229,7 +245,7 @@ const ProductsPage = () => {
                 className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl hover:shadow-red-500/20 transition-all duration-500 border border-gray-800 hover:border-red-500/50 text-white text-xl backdrop-blur-sm group-hover:scale-105"
                 iconBg="bg-red-500/20"
               />
-              
+
               <AnimatePresence>
                 {showLowToast && (
                   <motion.div
@@ -241,15 +257,18 @@ const ProductsPage = () => {
                   >
                     <div className="p-5">
                       <div className="flex items-center mb-4">
-                        <AlertTriangle className="text-red-500 mr-2" size={20} />
+                        <AlertTriangle
+                          className="text-red-500 mr-2"
+                          size={20}
+                        />
                         <h4 className="text-lg font-bold text-red-500">
                           Low Stock Alert
                         </h4>
                       </div>
                       <ul className="space-y-3">
                         {lowStock.map((product, index) => (
-                          <motion.li 
-                            key={index} 
+                          <motion.li
+                            key={index}
                             className="flex items-center justify-between text-white hover:text-red-500 transition-colors duration-300 group/item"
                             whileHover={{ x: 5 }}
                           >
@@ -295,7 +314,10 @@ const ProductsPage = () => {
               <div className="flex items-center">
                 <ShoppingCart className="text-yellow-500 mr-3" size={20} />
                 <p className="text-white font-semibold">
-                  Exchange rate: <span className="text-green-500">1 USD = {exchangeRate?.toFixed(2)} NGN</span>
+                  Exchange rate:{" "}
+                  <span className="text-green-500">
+                    1 USD = {exchangeRate?.toFixed(2)} NGN
+                  </span>
                 </p>
               </div>
               <p className="text-gray-400 text-sm">
@@ -326,7 +348,10 @@ const ProductsPage = () => {
               <ArrowUpRight className="ml-2" size={16} />
             </motion.button>
           </div>
-          <ProductsTable setTotalProducts={setTotalProducts} className="text-white" />
+          <ProductsTable
+            setTotalProducts={setTotalProducts}
+            className="text-white"
+          />
         </motion.div>
 
         {/* Charts Grid */}
@@ -343,11 +368,13 @@ const ProductsPage = () => {
             </div>
             <SalesTrendChart />
           </div>
-          
+
           <div className="bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl p-8 border border-gray-800 backdrop-blur-sm">
             <div className="flex items-center mb-6">
               <Sparkles className="mr-3 text-green-500" size={24} />
-              <h3 className="text-xl font-bold text-white">Category Distribution</h3>
+              <h3 className="text-xl font-bold text-white">
+                Category Distribution
+              </h3>
             </div>
             <CategoryDistributionChart />
           </div>
