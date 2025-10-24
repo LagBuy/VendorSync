@@ -71,7 +71,7 @@ const OverViewPage = () => {
         message: err.message,
       });
       setToast({
-        show: true,
+        show: false,
         message: "⚠️ Failed to load overview stats. Please try again.",
       });
       setTimeout(() => setToast({ show: false, message: "" }), 4000);

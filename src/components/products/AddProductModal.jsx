@@ -24,7 +24,6 @@ const AddProductModal = ({ onCancel, onAdd }) => {
   const UPLOAD_TIMEOUT = 10000; // 10 seconds
   const MAX_RETRIES = 2;
 
-  // Memoized fallback categories to prevent unnecessary re-renders
   const fallbackCategories = useMemo(
     () => [
       { id: uuidv4(), name: "Electronics", isFallback: true },
@@ -37,6 +36,30 @@ const AddProductModal = ({ onCancel, onAdd }) => {
       { id: uuidv4(), name: "Jewelry", isFallback: true },
       { id: uuidv4(), name: "Furniture", isFallback: true },
       { id: uuidv4(), name: "Food & Beverages", isFallback: true },
+      { id: uuidv4(), name: "Automotive", isFallback: true },
+      { id: uuidv4(), name: "Health & Wellness", isFallback: true },
+      { id: uuidv4(), name: "Baby Products", isFallback: true },
+      { id: uuidv4(), name: "Pet Supplies", isFallback: true },
+      { id: uuidv4(), name: "Office Supplies", isFallback: true },
+      { id: uuidv4(), name: "Tools & Hardware", isFallback: true },
+      { id: uuidv4(), name: "Music Instruments", isFallback: true },
+      { id: uuidv4(), name: "Art & Crafts", isFallback: true },
+      { id: uuidv4(), name: "Party Supplies", isFallback: true },
+      { id: uuidv4(), name: "Luggage & Bags", isFallback: true },
+      { id: uuidv4(), name: "Shoes & Footwear", isFallback: true },
+      { id: uuidv4(), name: "Watches", isFallback: true },
+      { id: uuidv4(), name: "Eyewear", isFallback: true },
+      { id: uuidv4(), name: "Fitness Equipment", isFallback: true },
+      { id: uuidv4(), name: "Outdoor Gear", isFallback: true },
+      { id: uuidv4(), name: "Video Games", isFallback: true },
+      { id: uuidv4(), name: "Movies & TV", isFallback: true },
+      { id: uuidv4(), name: "Mobile Accessories", isFallback: true },
+      { id: uuidv4(), name: "Computer Peripherals", isFallback: true },
+      { id: uuidv4(), name: "Home Appliances", isFallback: true },
+      { id: uuidv4(), name: "Kitchenware", isFallback: true },
+      { id: uuidv4(), name: "Bed & Bath", isFallback: true },
+      { id: uuidv4(), name: "Home Decor", isFallback: true },
+      { id: uuidv4(), name: "Gardening Tools", isFallback: true },
     ],
     []
   );
@@ -100,7 +123,6 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         throw new Error("No authentication token found. Please log in.");
       }
 
-      // Validate file
       validateImageFile(file);
 
       const imageFormData = new FormData();
@@ -133,7 +155,6 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         message: error.message,
       });
 
-      // Retry logic for server errors
       if (error.response?.status === 500 && retryCount < MAX_RETRIES) {
         console.log(`Retrying upload... (${retryCount + 1}/${MAX_RETRIES})`);
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -154,7 +175,6 @@ const AddProductModal = ({ onCancel, onAdd }) => {
     setIsUploadingImage(true);
 
     try {
-      // Quick validation before upload
       validateImageFile(file);
 
       const imageUrl = await uploadImageToServer(file);
@@ -287,7 +307,6 @@ const AddProductModal = ({ onCancel, onAdd }) => {
       (cat) => cat.name === formData.categories
     );
 
-    // Handle fallback categories
     if (selectedCategory?.isFallback) {
       try {
         const token = Cookies.get("jwt-token");
@@ -324,7 +343,6 @@ const AddProductModal = ({ onCancel, onAdd }) => {
       }
     }
 
-    // Validate numeric fields
     const priceValue = parseFloat(formData.price);
     if (isNaN(priceValue) || priceValue < 0) {
       toast.error("Please enter a valid price.", {
@@ -343,7 +361,6 @@ const AddProductModal = ({ onCancel, onAdd }) => {
       return;
     }
 
-    // FIX: Create FormData instead of JSON for product creation
     const productFormData = new FormData();
     productFormData.append("name", formData.name.trim());
     productFormData.append("description", formData.description.trim());
@@ -352,16 +369,9 @@ const AddProductModal = ({ onCancel, onAdd }) => {
     productFormData.append("verified", "false");
     productFormData.append("categories", finalCategoryName);
 
-    // If this one works, leave the commented code the way it is:
     if (formData.image) {
       productFormData.append("image_urls", [formData.image]);
     }
-
-    // if the code above does not work, you can uncomment the particular one after it:
-
-    // if(formData.image) {
-    //   productFormData.append("image_urls", JSON.stringify([formData.image]))
-    // }
 
     try {
       const token = Cookies.get("jwt-token");
@@ -373,7 +383,6 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         return;
       }
 
-      // FIX: Send as multipart/form-data instead of JSON
       const { data } = await axiosInstance.post("/products/", productFormData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -382,7 +391,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
 
       if (data) {
         const completeProduct = {
-          ...data.data, // Note: Use data.data since your response has data property
+          ...data.data,
           images:
             data.data.images && data.data.images.length > 0
               ? data.data.images
@@ -394,7 +403,6 @@ const AddProductModal = ({ onCancel, onAdd }) => {
 
         onAdd(completeProduct);
 
-        // Reset form
         setFormData({
           name: "",
           categories: "",
@@ -434,23 +442,25 @@ const AddProductModal = ({ onCancel, onAdd }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-start justify-center z-[100] overflow-auto pt-4 backdrop-blur-sm">
-      <div className="bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-2xl p-6 md:p-8 w-full max-w-md mx-4 my-4 md:mx-auto min-h-[80vh] border-2 border-green-400 shadow-2xl relative overflow-hidden">
+      {/* Enhanced width constraints and responsive padding */}
+      <div className="bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-2xl p-4 md:p-6 lg:p-8 w-full max-w-md max-w-[95vw] mx-2 my-4 min-h-[80vh] border-2 border-green-400 shadow-2xl relative overflow-hidden box-border">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-yellow-400 animate-pulse"></div>
         <div className="absolute -top-20 -right-20 w-40 h-40 bg-green-500 rounded-full opacity-10 blur-xl"></div>
         <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-yellow-500 rounded-full opacity-10 blur-xl"></div>
 
         <div className="relative z-10">
-          <h2 className="text-sm md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-yellow-400 mb-2 text-center drop-shadow-lg">
+          <h2 className="text-lg md:text-2xl lg:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-yellow-400 mb-2 text-center drop-shadow-lg">
             Add New Product
           </h2>
           <div className="w-20 h-1 bg-gradient-to-r from-green-400 to-yellow-400 mx-auto mb-6 rounded-full"></div>
         </div>
 
-        <div className="overflow-y-auto max-h-[60vh] custom-scrollbar relative z-10">
+        {/* Enhanced scroll handling with overflow-x-hidden */}
+        <div className="overflow-y-auto overflow-x-hidden max-h-[60vh] custom-scrollbar relative z-10 box-border">
           <form
             onSubmit={handleSubmit}
             id="add-product-form"
-            className="space-y-6 p-1"
+            className="space-y-6 px-1"
           >
             <div className="group">
               <label className="block text-green-300 mb-2 text-sm font-semibold tracking-wide">
@@ -461,7 +471,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border-2 border-gray-700 focus:border-green-400 focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition-all duration-300 placeholder-gray-500 group-hover:border-green-300"
+                className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border-2 border-gray-700 focus:border-green-400 focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition-all duration-300 placeholder-gray-500 group-hover:border-green-300 box-border"
                 placeholder="Enter product name..."
                 required
                 disabled={isLoading}
@@ -476,7 +486,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
                 name="categories"
                 value={formData.categories}
                 onChange={handleChange}
-                className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border-2 border-gray-700 focus:border-green-400 focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition-all duration-300 appearance-none cursor-pointer group-hover:border-green-300"
+                className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border-2 border-gray-700 focus:border-green-400 focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition-all duration-300 appearance-none cursor-pointer group-hover:border-green-300 box-border"
                 required
                 disabled={isLoading}
               >
@@ -500,13 +510,13 @@ const AddProductModal = ({ onCancel, onAdd }) => {
                   placeholder="Create new category..."
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
-                  className="flex-1 bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border-2 border-gray-700 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-50 transition-all duration-300 placeholder-gray-500"
+                  className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border-2 border-gray-700 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-50 transition-all duration-300 placeholder-gray-500 box-border"
                   disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={handleAddCategory}
-                  className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-black px-6 py-3 rounded-xl font-bold hover:from-yellow-400 hover:to-yellow-500 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/25 border-2 border-yellow-400"
+                  className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-black px-6 py-3 rounded-xl font-bold hover:from-yellow-400 hover:to-yellow-500 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/25 border-2 border-yellow-400 w-full box-border"
                   disabled={isLoading || isUploadingImage}
                 >
                   {isLoading ? "Adding..." : "Create"}
@@ -514,7 +524,8 @@ const AddProductModal = ({ onCancel, onAdd }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Changed to flex-col for all screen sizes to avoid overflow */}
+            <div className="flex flex-col gap-4">
               <div className="group">
                 <label className="block text-green-300 mb-2 text-sm font-semibold tracking-wide">
                   Price (₦) *
@@ -524,7 +535,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
                   name="price"
                   value={formData.price}
                   onChange={handleChange}
-                  className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border-2 border-gray-700 focus:border-green-400 focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition-all duration-300 group-hover:border-green-300"
+                  className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border-2 border-gray-700 focus:border-green-400 focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition-all duration-300 group-hover:border-green-300 box-border"
                   required
                   min="0"
                   step="0.01"
@@ -541,7 +552,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
                   name="stock_quantity"
                   value={formData.stock_quantity}
                   onChange={handleChange}
-                  className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border-2 border-gray-700 focus:border-green-400 focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition-all duration-300 group-hover:border-green-300"
+                  className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border-2 border-gray-700 focus:border-green-400 focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition-all duration-300 group-hover:border-green-300 box-border"
                   required
                   min="0"
                   placeholder="0"
@@ -558,7 +569,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border-2 border-gray-700 focus:border-green-400 focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition-all duration-300 h-24 resize-none placeholder-gray-500 group-hover:border-green-300"
+                className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border-2 border-gray-700 focus:border-green-400 focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition-all duration-300 h-24 resize-none placeholder-gray-500 group-hover:border-green-300 box-border"
                 placeholder="Describe your product..."
                 disabled={isLoading}
               />
@@ -573,7 +584,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
                   type="file"
                   accept="image/*"
                   onChange={handleImageChange}
-                  className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border-2 border-gray-700 focus:border-green-400 focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition-all duration-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-400 cursor-pointer group-hover:border-green-300"
+                  className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border-2 border-gray-700 focus:border-green-400 focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition-all duration-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-400 cursor-pointer group-hover:border-green-300 box-border"
                   disabled={isLoading || isUploadingImage}
                 />
                 {isUploadingImage && (
@@ -584,11 +595,11 @@ const AddProductModal = ({ onCancel, onAdd }) => {
               </div>
 
               {formData.image && (
-                <div className="mt-3 transform hover:scale-105 transition-transform duration-300 relative">
+                <div className="mt-3 transform hover:scale-105 transition-transform duration-300 relative w-full">
                   <img
                     src={formData.image}
                     alt="Product Preview"
-                    className="w-full h-32 object-cover rounded-xl border-2 border-green-400 shadow-lg"
+                    className="w-full h-32 object-cover rounded-xl border-2 border-green-400 shadow-lg box-border"
                     onError={() => {
                       console.error(
                         "Image preview failed to load:",
@@ -621,11 +632,12 @@ const AddProductModal = ({ onCancel, onAdd }) => {
           </form>
         </div>
 
-        <div className="flex justify-between gap-4 sticky bottom-0 bg-transparent p-4 rounded-b-2xl mt-6 z-10">
+        {/* Enhanced responsive button layout */}
+        <div className="flex flex-col md:flex-row justify-between gap-4 sticky bottom-0 bg-transparent p-4 rounded-b-2xl mt-6 z-10 box-border">
           <button
             type="button"
             onClick={onCancel}
-            className="bg-gradient-to-r from-gray-700 to-gray-800 text-white px-6 py-3 rounded-xl font-bold hover:from-gray-600 hover:to-gray-700 transform hover:scale-105 transition-all duration-300 border-2 border-gray-600 shadow-lg flex-1"
+            className="bg-gradient-to-r from-gray-700 to-gray-800 text-white px-6 py-3 rounded-xl font-bold hover:from-gray-600 hover:to-gray-700 transform hover:scale-105 transition-all duration-300 border-2 border-gray-600 shadow-lg flex-1 box-border"
             disabled={isLoading || isUploadingImage}
           >
             Cancel
@@ -633,7 +645,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
           <button
             type="submit"
             form="add-product-form"
-            className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-bold hover:from-green-400 hover:to-green-500 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-green-500/25 border-2 border-green-400 flex-1"
+            className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-bold hover:from-green-400 hover:to-green-500 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-green-500/25 border-2 border-green-400 flex-1 box-border"
             disabled={isLoading || isUploadingImage}
           >
             {isLoading ? (

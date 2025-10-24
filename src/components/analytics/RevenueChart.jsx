@@ -106,7 +106,7 @@ const RevenueChart = () => {
             </div>
             <button
               type="submit"
-              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-400 hover:to-green-500 transform hover:scale-105 transition-all duration-300 shadow-lg border-2 border-green-400"
+              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-1 rounded-xl font-semibold hover:from-green-400 hover:to-green-500 transform hover:scale-105 transition-all duration-300 shadow-lg border-1 border-green-400"
             >
               Set Target
             </button>

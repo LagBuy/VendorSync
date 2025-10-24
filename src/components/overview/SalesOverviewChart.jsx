@@ -10,7 +10,6 @@ import {
   Area,
 } from "recharts";
 import { motion } from "framer-motion";
-import { toast } from "react-toastify";
 import { axiosInstance } from "../../axios-instance/axios-instance";
 import { TrendingUp, Sparkles, BarChart3, Zap } from "lucide-react";
 
@@ -51,22 +50,12 @@ const SalesOverviewChart = () => {
           firstMonth > 0 ? ((lastMonth - firstMonth) / firstMonth) * 100 : 0;
         setGrowthRate(growth);
       }
-
-      toast.success("Sales overview data loaded successfully ✅", {
-        className: "custom-toast-success",
-      });
     } catch (error) {
       console.error("Error fetching sales data:", {
         status: error.response?.status,
         data: error.response?.data,
         message: error.message,
       });
-      toast.error(
-        error.response?.data?.message || "Failed to load sales data.",
-        {
-          className: "custom-toast-error",
-        }
-      );
       setSalesData([]); // Set empty array on error
       setTotalSales(0);
       setGrowthRate(0);

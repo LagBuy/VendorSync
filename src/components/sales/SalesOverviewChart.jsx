@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { motion } from "framer-motion";
-import { toast } from "react-toastify";
 import { axiosInstance } from "../../axios-instance/axios-instance";
 
 // Spinner component
@@ -28,20 +27,20 @@ const SalesOverviewChart = () => {
     setLoading(true);
     try {
       // Assuming the backend accepts a range query parameter
-      const { data } = await axiosInstance.get(`/sales?range=${selectedTimeRange.toLowerCase().replace(" ", "")}`);
+      const { data } = await axiosInstance.get(
+        `/sales?range=${selectedTimeRange.toLowerCase().replace(" ", "")}`
+      );
       const formattedData = data.map((item, index) => ({
         name: item.month || `Period ${index + 1}`,
         sales: item.sales,
       }));
       setSalesData(formattedData);
-      toast.success("Sales data loaded successfully ✅");
     } catch (error) {
       console.error("Error fetching sales data:", {
         status: error.response?.status,
         data: error.response?.data,
         message: error.message,
       });
-      toast.error(error.response?.data?.message || "Failed to load sales data.");
     } finally {
       setLoading(false);
     }
