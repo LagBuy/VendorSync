@@ -28,7 +28,7 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
     dob: "1990-01-01",
     phone: "",
     businessName: "",
-    business_address: "", // New field for full Lagos address
+    business_address: "",
     businessImage: null,
     userCity: "",
     userState: "",
@@ -46,6 +46,7 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
   const fileInputRef = useRef(null);
 
   const SIGNUP_ENDPOINT = "/auth/signup/";
+  const IMAGE_UPLOAD_ENDPOINT = "/auth/upload-profile-image/";
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -82,6 +83,26 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
+  };
+
+  // New function to upload image separately
+  const uploadBusinessImage = async (imageFile) => {
+    try {
+      const imageFormData = new FormData();
+      imageFormData.append("image", imageFile);
+      
+      const uploadResponse = await axiosInstance.post(IMAGE_UPLOAD_ENDPOINT, imageFormData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      console.log("Image Upload Response:", uploadResponse.data);
+      return uploadResponse.data; // Return the response which should contain image URL
+    } catch (error) {
+      console.error("Image Upload Error:", error);
+      throw new Error("Failed to upload business image");
+    }
   };
 
   const validateEmail = (email) => {
@@ -197,7 +218,7 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
     }
 
     if (!businessImage) {
-      setError("Please upload  your business logo.");
+      setError("Please upload your business logo.");
       return false;
     }
 
@@ -239,6 +260,21 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
     }
 
     try {
+      let imageUploadResponse = null;
+      
+      // First, upload the business image separately
+      if (formData.businessImage) {
+        try {
+          imageUploadResponse = await uploadBusinessImage(formData.businessImage);
+          console.log("Business image uploaded successfully:", imageUploadResponse);
+        } catch {
+          setError("Failed to upload business logo. Please try again.");
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Then proceed with the main signup
       const formDataToSend = new FormData();
       formDataToSend.append("email", formData.email.trim());
       formDataToSend.append("password1", formData.password);
@@ -256,6 +292,12 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
       formDataToSend.append("business_name", formData.businessName.trim());
       formDataToSend.append("business_address", formData.business_address.trim());
       
+      // If you want to send the image URL from the separate upload, uncomment below:
+      // if (imageUploadResponse && imageUploadResponse.imageUrl) {
+      //   formDataToSend.append("business_image_url", imageUploadResponse.imageUrl);
+      // }
+      
+      // Keep the original file upload as fallback
       if (formData.businessImage) {
         formDataToSend.append("business_image", formData.businessImage);
       }
