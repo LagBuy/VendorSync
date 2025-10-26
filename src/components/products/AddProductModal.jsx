@@ -29,11 +29,11 @@ const AddProductModal = ({ onCancel, onAdd }) => {
       { id: uuidv4(), name: "Electronics", isFallback: true },
       { id: uuidv4(), name: "Clothing", isFallback: true },
       { id: uuidv4(), name: "Books", isFallback: true },
-      { id: uuidv4(), name: "Home & Garden", isFallback: true },
       { id: uuidv4(), name: "Toys", isFallback: true },
       { id: uuidv4(), name: "Sports", isFallback: true },
-      { id: uuidv4(), name: "Beauty", isFallback: true },
-      { id: uuidv4(), name: "Jewelry", isFallback: true },
+      { id: uuidv4(), name: "Fashion", isFallback: true },
+      { id: uuidv4(), name: "Perfumes & Deoderants", isFallback: true },
+      { id: uuidv4(), name: "Jewelries", isFallback: true },
       { id: uuidv4(), name: "Furniture", isFallback: true },
       { id: uuidv4(), name: "Food & Beverages", isFallback: true },
       { id: uuidv4(), name: "Automotive", isFallback: true },
@@ -47,7 +47,6 @@ const AddProductModal = ({ onCancel, onAdd }) => {
       { id: uuidv4(), name: "Party Supplies", isFallback: true },
       { id: uuidv4(), name: "Luggage & Bags", isFallback: true },
       { id: uuidv4(), name: "Shoes & Footwear", isFallback: true },
-      { id: uuidv4(), name: "Watches", isFallback: true },
       { id: uuidv4(), name: "Eyewear", isFallback: true },
       { id: uuidv4(), name: "Fitness Equipment", isFallback: true },
       { id: uuidv4(), name: "Outdoor Gear", isFallback: true },
@@ -64,7 +63,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
     []
   );
 
-  // Memoized category fetch function
+  // Memoized category fetch function - UPDATED TO ALWAYS INCLUDE FALLBACK CATEGORIES
   const fetchCategories = useCallback(async () => {
     try {
       const token = Cookies.get("jwt-token");
@@ -77,12 +76,37 @@ const AddProductModal = ({ onCancel, onAdd }) => {
       const { data } = await axiosInstance.get("/products/categories/");
 
       if (Array.isArray(data.data) && data.data.length > 0) {
-        setCategories(data.data.map((cat) => ({ ...cat, isFallback: false })));
+        // Combine API categories with fallback categories, removing duplicates
+        const apiCategories = data.data.map((cat) => ({ ...cat, isFallback: false }));
+        
+        // Create a Set of category names to avoid duplicates
+        const categoryNames = new Set();
+        const allCategories = [];
+        
+        // Add API categories first
+        apiCategories.forEach(cat => {
+          if (!categoryNames.has(cat.name.toLowerCase())) {
+            categoryNames.add(cat.name.toLowerCase());
+            allCategories.push(cat);
+          }
+        });
+        
+        // Add fallback categories that aren't already in the list
+        fallbackCategories.forEach(fallbackCat => {
+          if (!categoryNames.has(fallbackCat.name.toLowerCase())) {
+            categoryNames.add(fallbackCat.name.toLowerCase());
+            allCategories.push(fallbackCat);
+          }
+        });
+        
+        setCategories(allCategories);
       } else {
+        // If no API categories, use all fallback categories
         setCategories(fallbackCategories);
       }
     } catch (error) {
       console.error("Fetch categories error:", error);
+      // On error, still show all fallback categories
       setCategories(fallbackCategories);
     }
   }, [fallbackCategories]);
@@ -244,6 +268,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
         name: newCategory.trim(),
       });
 
+      // Add the new category to the existing list while keeping all fallback categories
       setCategories((prev) => [...prev, { ...data, isFallback: false }]);
       setFormData((prev) => ({ ...prev, categories: data.name }));
       setNewCategory("");
@@ -443,7 +468,7 @@ const AddProductModal = ({ onCancel, onAdd }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-start justify-center z-[100] overflow-auto pt-4 backdrop-blur-sm">
       {/* Enhanced width constraints and responsive padding */}
-      <div className="bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-2xl p-4 md:p-6 lg:p-8 w-full max-w-md max-w-[95vw] mx-2 my-4 min-h-[80vh] border-2 border-green-400 shadow-2xl relative overflow-hidden box-border">
+      <div className="bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-2xl p-4 md:p-6 lg:p-8 w-full max-w-[95vw] mx-2 my-4 min-h-[80vh] border-2 border-green-400 shadow-2xl relative overflow-hidden box-border">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-yellow-400 animate-pulse"></div>
         <div className="absolute -top-20 -right-20 w-40 h-40 bg-green-500 rounded-full opacity-10 blur-xl"></div>
         <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-yellow-500 rounded-full opacity-10 blur-xl"></div>
