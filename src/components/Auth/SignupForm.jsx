@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { FaEye, FaEyeSlash, FaCloudUploadAlt, FaMapMarkerAlt } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaCloudUploadAlt } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { axiosInstance } from "../../axios-instance/axios-instance";
 import { toast } from "react-toastify";
@@ -28,8 +28,9 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
     dob: "1990-01-01",
     phone: "",
     businessName: "",
-    business_address: "",
-    businessImage: null,
+    businessAddress: "",
+    businessLocationCity: "",
+    businessLocationState: "",
     userCity: "",
     userState: "",
     password: "",
@@ -43,6 +44,7 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showDuplicateEmailModal, setShowDuplicateEmailModal] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState("");
   const fileInputRef = useRef(null);
 
   const SIGNUP_ENDPOINT = "/auth/signup/";
@@ -55,41 +57,34 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
     }));
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        setError("Please upload an image file");
-        return;
-      }
-      
-      // Check file size (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
-        setError("Image size should be less than 5MB");
-        return;
-      }
+    if (!file) return;
 
-      setFormData(prev => ({ ...prev, businessImage: file }));
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      setError("Please upload an image file");
+      return;
     }
-  };
+    
+    // Check file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image size should be less than 5MB");
+      return;
+    }
 
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
 
-  // New function to upload image separately
-  const uploadBusinessImage = async (imageFile) => {
+    // Upload image to get URL
     try {
+      setIsLoading(true);
       const imageFormData = new FormData();
-      imageFormData.append("image", imageFile);
+      imageFormData.append("image", file); // Single file, not array
       
       const uploadResponse = await axiosInstance.post(IMAGE_UPLOAD_ENDPOINT, imageFormData, {
         headers: {
@@ -98,11 +93,25 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
       });
       
       console.log("Image Upload Response:", uploadResponse.data);
-      return uploadResponse.data; // Return the response which should contain image URL
+      
+      // Assuming the response contains the image URL
+      if (uploadResponse.data && uploadResponse.data.url) {
+        setUploadedImageUrl(uploadResponse.data.url);
+        toast.success("Profile image uploaded successfully!");
+      } else {
+        throw new Error("Hmmm...your profile image upload failed");
+      }
     } catch (error) {
       console.error("Image Upload Error:", error);
-      throw new Error("Failed to upload business image");
+      setError("Failed to upload image. Please try again.");
+      setImagePreview(null);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   const validateEmail = (email) => {
@@ -133,28 +142,28 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
 
     if (validateName(firstName)) {
       setError(
-        "First name must contain only letters and spaces, and start with a letter."
+        "First name must contain only letters and spaces, and start with a capital letter."
       );
       return false;
     }
 
     if (validateName(lastName)) {
       setError(
-        "Last name must contain only letters and spaces, and start with a letter."
+        "Last name must contain only letters and spaces, and start with a capital letter."
       );
       return false;
     }
 
     if (validateName(userCity)) {
       setError(
-        "Your city must contain only letters and spaces, and start with a letter."
+        "Your city must contain only letters and spaces, and start with a capital letter."
       );
       return false;
     }
 
     if (validateName(userState)) {
       setError(
-        "Your state must contain only letters and spaces, and start with a letter."
+        "Your state must contain only letters and spaces, and start with a capital letter."
       );
       return false;
     }
@@ -175,8 +184,8 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
     ) {
       age;
     }
-    if (age < 18) {
-      setError("You must be at least 18 years old.");
+    if (age < 16) {
+      setError("You must be at least 16 years old.");
       return false;
     }
 
@@ -193,10 +202,11 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
   const validateStep4 = () => {
     const {
       businessName,
-      business_address,
+      businessAddress,
+      businessLocationCity,
+      businessLocationState,
       password,
       confirmPassword,
-      businessImage,
     } = formData;
 
     if (validateName(businessName)) {
@@ -206,18 +216,22 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
       return false;
     }
 
-    if (!business_address.trim()) {
-      setError("Please enter your business address in Lagos.");
+    if (!businessAddress.trim()) {
+      setError("Business address is required.");
       return false;
     }
 
-    // Basic validation for Lagos address
-    if (!business_address.toLowerCase().includes("lagos")) {
-      setError("Business address must be in Lagos, Nigeria.");
+    if (!businessLocationCity.trim()) {
+      setError("Business city is required.");
       return false;
     }
 
-    if (!businessImage) {
+    if (!businessLocationState.trim()) {
+      setError("Business state is required.");
+      return false;
+    }
+
+    if (!uploadedImageUrl) {
       setError("Please upload your business logo.");
       return false;
     }
@@ -260,53 +274,30 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
     }
 
     try {
-      let imageUploadResponse = null;
-      
-      // First, upload the business image separately
-      if (formData.businessImage) {
-        try {
-          imageUploadResponse = await uploadBusinessImage(formData.businessImage);
-          console.log("Business image uploaded successfully:", imageUploadResponse);
-        } catch {
-          setError("Failed to upload business logo. Please try again.");
-          setIsLoading(false);
-          return;
-        }
-      }
+      const signupData = {
+        email: formData.email.trim(),
+        password1: formData.password, //only password1 was provided in the documentation
+        roles: ["user", "vendor"],
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
+        phone_number: formData.phone,
+        address: formData.address.trim(),
+        gender: formData.gender,
+        dob: formData.dob,
+        state: formData.userState.trim(),
+        city: formData.userCity.trim(),
+        image: uploadedImageUrl, // not business_image
+        business_name: formData.businessName.trim(),
+        business_address: formData.businessAddress.trim(),
+        business_location_city: formData.businessLocationCity.trim(),
+        business_location_state: formData.businessLocationState.trim(),
+      };
 
-      // Then proceed with the main signup
-      const formDataToSend = new FormData();
-      formDataToSend.append("email", formData.email.trim());
-      formDataToSend.append("password1", formData.password);
-      formDataToSend.append("password2", formData.confirmPassword);
-      formDataToSend.append("roles", "user");
-      formDataToSend.append("roles", "vendor");
-      formDataToSend.append("first_name", formData.firstName.trim());
-      formDataToSend.append("last_name", formData.lastName.trim());
-      formDataToSend.append("phone_number", formData.phone);
-      formDataToSend.append("address", formData.address.trim());
-      formDataToSend.append("gender", formData.gender);
-      formDataToSend.append("dob", formData.dob);
-      formDataToSend.append("state", formData.userState.trim());
-      formDataToSend.append("city", formData.userCity.trim());
-      formDataToSend.append("business_name", formData.businessName.trim());
-      formDataToSend.append("business_address", formData.business_address.trim());
-      
-      // If you want to send the image URL from the separate upload, uncomment below:
-      // if (imageUploadResponse && imageUploadResponse.imageUrl) {
-      //   formDataToSend.append("business_image_url", imageUploadResponse.imageUrl);
-      // }
-      
-      // Keep the original file upload as fallback
-      if (formData.businessImage) {
-        formDataToSend.append("business_image", formData.businessImage);
-      }
+      console.log("Signup Data:", signupData);
 
-      console.log("Signup FormData:", Object.fromEntries(formDataToSend));
-
-      const signupResponse = await axiosInstance.post(SIGNUP_ENDPOINT, formDataToSend, {
+      const signupResponse = await axiosInstance.post(SIGNUP_ENDPOINT, signupData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/json',
         },
       });
       
@@ -377,7 +368,7 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
           );
         }
       } else {
-        setError("Signup failed. Please check your connection and try again.");
+        setError("Hmmm...your signup failed. Please, check your internet connection or your credentials, in case of any mismatch.");
       }
     } finally {
       setIsLoading(false);
@@ -409,570 +400,592 @@ const SignupForm = ({ onSwitch, email: initialEmail = "" }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-yellow-50 to-green-100 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden border-2 border-green-200"
-      >
-        {/* Header Section */}
-        <div className="bg-gradient-to-r from-green-500 to-yellow-500 p-8 text-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-black/10"></div>
-          <div className="relative z-10">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-3 bg-white/20 backdrop-blur-sm rounded-full px-6 py-3 mb-6 border border-white/30"
-            >
-              <Sparkles className="w-5 h-5 text-white" />
-              <span className="text-white font-bold text-sm">JOIN LAGBUY VENDORS</span>
-            </motion.div>
-            
-            <motion.h2
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-4xl md:text-5xl font-black text-white mb-4"
-            >
-              Start Selling on{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-100 to-yellow-100">
-                LagBuy
-              </span>
-            </motion.h2>
-            
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-green-100 text-lg max-w-2xl mx-auto"
-            >
-              Join almost 500+ vendors on LAGBUY
-            </motion.p>
-          </div>
-        </div>
-
-        {/* Progress Steps */}
-        <div className="px-8 pt-8">
-          <div className="flex items-center justify-between max-w-2xl mx-auto mb-8">
-            {steps.map((stepItem, index) => (
-              <div key={stepItem.number} className="flex items-center">
-                <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 ${
-                  step >= stepItem.number 
-                    ? 'bg-gradient-to-r from-green-500 to-yellow-500 border-transparent text-white' 
-                    : 'border-green-300 text-green-300'
-                } transition-all duration-300`}>
-                  <stepItem.icon className="w-5 h-5" />
-                </div>
-                {index < steps.length - 1 && (
-                  <div className={`w-16 h-1 mx-2 ${
-                    step > stepItem.number ? 'bg-gradient-to-r from-green-500 to-yellow-500' : 'bg-green-200'
-                  }`} />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Form Container */}
-        <div className="px-8 pb-8">
-          <div className="max-w-2xl mx-auto">
-            {error && (
+    <div className="fixed inset-0 bg-gradient-to-br from-green-50 via-yellow-50 to-green-100 overflow-y-auto">
+      <div className="min-h-full w-full flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border-2 border-green-200 my-8"
+        >
+          {/* Header Section */}
+          <div className="bg-gradient-to-r from-green-500 to-yellow-500 p-8 text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-black/10"></div>
+            <div className="relative z-10">
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="inline-flex items-center gap-3 bg-white/20 backdrop-blur-sm rounded-full px-6 py-3 mb-6 border border-white/30"
+              >
+                <Sparkles className="w-5 h-5 text-white" />
+                <span className="text-white font-bold text-sm">JOIN LAGBUY VENDORS</span>
+              </motion.div>
+              
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl mb-6 flex items-center gap-3"
+                transition={{ delay: 0.3 }}
+                className="text-4xl md:text-5xl font-black text-white mb-4"
               >
-                <Shield className="w-5 h-5" />
-                {error}
-              </motion.div>
-            )}
-
-            {/* Step 1: Email */}
-            {step === 1 && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-6"
+                Start Selling on{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-100 to-yellow-100">
+                  LagBuy
+                </span>
+              </motion.h2>
+              
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-green-100 text-lg max-w-2xl mx-auto"
               >
-                <div className="text-center mb-8">
-                  <Mail className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Let's Get Started</h3>
-                  <p className="text-gray-600">Enter your email to begin your vendor journey</p>
-                </div>
+                Join almost almost 500+ vendors on LAGBUY
+              </motion.p>
+            </div>
+          </div>
 
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-5 h-5" />
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-green-50 border-2 border-green-200 rounded-2xl focus:outline-none focus:border-green-500 text-gray-900 placeholder-green-600 transition-all duration-300 text-lg"
-                    placeholder="your@business.com"
-                  />
+          {/* Progress Steps */}
+          <div className="px-8 pt-8">
+            <div className="flex items-center justify-between max-w-2xl mx-auto mb-8">
+              {steps.map((stepItem, index) => (
+                <div key={stepItem.number} className="flex items-center">
+                  <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 ${
+                    step >= stepItem.number 
+                      ? 'bg-gradient-to-r from-green-500 to-yellow-500 border-transparent text-white' 
+                      : 'border-green-300 text-green-300'
+                  } transition-all duration-300`}>
+                    <stepItem.icon className="w-5 h-5" />
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`w-16 h-1 mx-2 ${
+                      step > stepItem.number ? 'bg-gradient-to-r from-green-500 to-yellow-500' : 'bg-green-200'
+                    }`} />
+                  )}
                 </div>
+              ))}
+            </div>
+          </div>
 
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleSkipEmailVerification}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-green-500 to-yellow-500 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-green-500/25 border-2 border-white/20 relative overflow-hidden group"
+          {/* Form Container */}
+          <div className="px-8 pb-8">
+            <div className="max-w-2xl mx-auto">
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl mb-6 flex items-center gap-3"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <span className="relative flex items-center justify-center gap-3 text-lg">
-                    {isLoading ? (
-                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        Continue 
-                        <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                      </>
-                    )}
-                  </span>
-                </motion.button>
+                  <Shield className="w-5 h-5" />
+                  {error}
+                </motion.div>
+              )}
 
-                <div className="text-center">
-                  <button
-                    onClick={() => onSwitch("login")}
-                    className="text-green-600 font-semibold hover:text-green-700 transition-colors duration-200"
-                  >
-                    Already have an account? Log in
-                  </button>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 3: Personal Information */}
-            {step === 3 && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-6"
-              >
-                <div className="text-center mb-8">
-                  <User className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Tell Us About Yourself</h3>
-                  <p className="text-gray-600">We need to know a bit about the person behind the business</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">First Name</label>
-                    <div className="relative">
-                      <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
-                      <input
-                        type="text"
-                        required
-                        value={formData.firstName}
-                        onChange={(e) => handleInputChange("firstName", e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
-                        placeholder="John"
-                      />
-                    </div>
+              {/* Step 1: Email */}
+              {step === 1 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="space-y-6"
+                >
+                  <div className="text-center mb-8">
+                    <Mail className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Let's Get Started</h3>
+                    <p className="text-gray-600">Enter your email to begin your vendor journey</p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Last Name</label>
-                    <div className="relative">
-                      <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
-                      <input
-                        type="text"
-                        required
-                        value={formData.lastName}
-                        onChange={(e) => handleInputChange("lastName", e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
-                        placeholder="Doe"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Gender</label>
-                    <select
-                      value={formData.gender}
-                      onChange={(e) => handleInputChange("gender", e.target.value)}
-                      className="w-full px-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Date of Birth</label>
-                    <div className="relative">
-                      <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
-                      <input
-                        type="date"
-                        required
-                        value={formData.dob}
-                        onChange={(e) => handleInputChange("dob", e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
-                    <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
-                      <input
-                        type="tel"
-                        required
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange("phone", e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
-                        placeholder="08012345678"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Your State</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-5 h-5" />
                     <input
-                      type="text"
+                      type="email"
                       required
-                      value={formData.userState}
-                      onChange={(e) => handleInputChange("userState", e.target.value)}
-                      className="w-full px-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
-                      placeholder="Lagos"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      className="w-full pl-12 pr-4 py-4 bg-green-50 border-2 border-green-200 rounded-2xl focus:outline-none focus:border-green-500 text-gray-900 placeholder-green-600 transition-all duration-300 text-lg"
+                      placeholder="youractiveemail@gmail.com"
                     />
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Your City</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.userCity}
-                      onChange={(e) => handleInputChange("userCity", e.target.value)}
-                      className="w-full px-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
-                      placeholder="Ikeja"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Your Address</label>
-                    <div className="relative">
-                      <MapPin className="absolute left-4 top-4 text-green-500 w-4 h-4" />
-                      <input
-                        type="text"
-                        value={formData.address}
-                        onChange={(e) => handleInputChange("address", e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
-                        placeholder="Your complete residential address"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 pt-4">
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={handleBack}
-                    className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 px-6 rounded-xl border-2 border-gray-200 transition-all duration-300 hover:border-gray-300"
-                  >
-                    Back
-                  </motion.button>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      setError("");
-                      if (validateStep3()) setStep(4);
-                    }}
+                    onClick={handleSkipEmailVerification}
                     disabled={isLoading}
-                    className="flex-1 bg-gradient-to-r from-green-500 to-yellow-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-green-500/25 border-2 border-white/20 relative overflow-hidden group"
+                    className="w-full bg-gradient-to-r from-green-500 to-yellow-500 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-green-500/25 border-2 border-white/20 relative overflow-hidden group"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <span className="relative flex items-center justify-center gap-2">
-                      Continue 
-                      <Store className="w-4 h-4" />
+                    <span className="relative flex items-center justify-center gap-3 text-lg">
+                      {isLoading ? (
+                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          Continue 
+                          <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </>
+                      )}
                     </span>
                   </motion.button>
-                </div>
-              </motion.div>
-            )}
 
-            {/* Step 4: Business Details */}
-            {step === 4 && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-6"
-              >
-                <div className="text-center mb-8">
-                  <Store className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Business Information</h3>
-                  <p className="text-gray-600">Tell us about your amazing business</p>
-                </div>
+                  <div className="text-center">
+                    <button
+                      onClick={() => onSwitch("login")}
+                      className="text-green-600 font-semibold hover:text-green-700 transition-colors duration-200"
+                    >
+                      You already have an account? Then, log in.
+                    </button>
+                  </div>
+                </motion.div>
+              )}
 
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Business Name</label>
-                    <div className="relative">
-                      <Store className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
+              {/* Step 3: Personal Information */}
+              {step === 3 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="space-y-6"
+                >
+                  <div className="text-center mb-8">
+                    <User className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Tell Us About Yourself</h3>
+                    <p className="text-gray-600">We need to know a bit about the person behind the business</p>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">First Name</label>
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
+                        <input
+                          type="text"
+                          required
+                          value={formData.firstName}
+                          onChange={(e) => handleInputChange("firstName", e.target.value)}
+                          className="w-full pl-12 pr-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
+                          placeholder="John"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Last Name</label>
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
+                        <input
+                          type="text"
+                          required
+                          value={formData.lastName}
+                          onChange={(e) => handleInputChange("lastName", e.target.value)}
+                          className="w-full pl-12 pr-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
+                          placeholder="Doe"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Gender</label>
+                      <select
+                        value={formData.gender}
+                        onChange={(e) => handleInputChange("gender", e.target.value)}
+                        className="w-full px-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Date of Birth</label>
+                      <div className="relative">
+                        <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
+                        <input
+                          type="date"
+                          required
+                          value={formData.dob}
+                          onChange={(e) => handleInputChange("dob", e.target.value)}
+                          className="w-full pl-12 pr-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
+                      <div className="relative">
+                        <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
+                        <input
+                          type="tel"
+                          required
+                          value={formData.phone}
+                          onChange={(e) => handleInputChange("phone", e.target.value)}
+                          className="w-full pl-12 pr-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
+                          placeholder="08012345678"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Your State</label>
                       <input
                         type="text"
                         required
-                        value={formData.businessName}
-                        onChange={(e) => handleInputChange("businessName", e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
-                        placeholder="Your awesome business name"
+                        value={formData.userState}
+                        onChange={(e) => handleInputChange("userState", e.target.value)}
+                        className="w-full px-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
+                        placeholder="Lagos"
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Business Address in Lagos
-                      <span className="text-green-500 ml-1">*</span>
-                    </label>
-                    <div className="relative">
-                      <FaMapMarkerAlt className="absolute left-4 top-4 text-green-500 w-4 h-4" />
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Your City</label>
                       <input
                         type="text"
                         required
-                        value={formData.business_address}
-                        onChange={(e) => handleInputChange("business_address", e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
-                        placeholder="e.g., 123 Business Street, Ikeja, Lagos"
+                        value={formData.userCity}
+                        onChange={(e) => handleInputChange("userCity", e.target.value)}
+                        className="w-full px-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
+                        placeholder="Ikeja"
                       />
                     </div>
-                    <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      Must be a valid Lagos, Nigeria address
-                    </p>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Your Address</label>
+                      <div className="relative">
+                        <MapPin className="absolute left-4 top-4 text-green-500 w-4 h-4" />
+                        <input
+                          type="text"
+                          value={formData.address}
+                          onChange={(e) => handleInputChange("address", e.target.value)}
+                          className="w-full pl-12 pr-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
+                          placeholder="Your complete residential address"
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Image Upload Section */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Business Logo
-                      <span className="text-green-500 ml-1">*</span>
-                    </label>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleImageUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    
-                    <motion.div
+                  <div className="flex gap-4 pt-4">
+                    <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={triggerFileInput}
-                      className="border-2 border-dashed border-green-300 rounded-2xl p-8 text-center cursor-pointer bg-green-50 hover:bg-green-100 transition-all duration-300"
+                      onClick={handleBack}
+                      className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 px-6 rounded-xl border-2 border-gray-200 transition-all duration-300 hover:border-gray-300"
                     >
-                      {imagePreview ? (
-                        <div className="space-y-4">
-                          <img 
-                            src={imagePreview} 
-                            alt="Business preview" 
-                            className="w-32 h-32 object-cover rounded-xl mx-auto border-2 border-green-200"
-                          />
-                          <p className="text-green-600 font-semibold">Click to change image</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <FaCloudUploadAlt className="w-12 h-12 text-green-400 mx-auto" />
-                          <div>
-                            <p className="text-gray-700 font-semibold">Upload Business Logo</p>
-                            <p className="text-gray-500 text-sm">PNG, JPG up to 5MB</p>
+                      Back
+                    </motion.button>
+                    
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        setError("");
+                        if (validateStep3()) setStep(4);
+                      }}
+                      disabled={isLoading}
+                      className="flex-1 bg-gradient-to-r from-green-500 to-yellow-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-green-500/25 border-2 border-white/20 relative overflow-hidden group"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <span className="relative flex items-center justify-center gap-2">
+                        Continue 
+                        <Store className="w-4 h-4" />
+                      </span>
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 4: Business Details */}
+              {step === 4 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="space-y-6"
+                >
+                  <div className="text-center mb-8">
+                    <Store className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Business Information</h3>
+                    <p className="text-gray-600">Tell us about your amazing business</p>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Business Name</label>
+                      <div className="relative">
+                        <Store className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
+                        <input
+                          type="text"
+                          required
+                          value={formData.businessName}
+                          onChange={(e) => handleInputChange("businessName", e.target.value)}
+                          className="w-full pl-12 pr-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
+                          placeholder="Your awesome business name"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Business Address</label>
+                      <div className="relative">
+                        <MapPin className="absolute left-4 top-4 text-green-500 w-4 h-4" />
+                        <input
+                          type="text"
+                          required
+                          value={formData.businessAddress}
+                          onChange={(e) => handleInputChange("businessAddress", e.target.value)}
+                          className="w-full pl-12 pr-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
+                          placeholder="Your business physical address"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Business City</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.businessLocationCity}
+                        onChange={(e) => handleInputChange("businessLocationCity", e.target.value)}
+                        className="w-full px-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
+                        placeholder="City where your business is located"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Business State</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.businessLocationState}
+                        onChange={(e) => handleInputChange("businessLocationState", e.target.value)}
+                        className="w-full px-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
+                        placeholder="State where your business is located"
+                      />
+                    </div>
+
+                    {/* Image Upload Section */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Business Logo
+                        <span className="text-green-500 ml-1">*</span>
+                        {uploadedImageUrl && (
+                          <span className="text-green-600 text-sm ml-2">✓ Uploaded successfully</span>
+                        )}
+                      </label>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageUpload}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={triggerFileInput}
+                        className="border-2 border-dashed border-green-300 rounded-2xl p-8 text-center cursor-pointer bg-green-50 hover:bg-green-100 transition-all duration-300"
+                      >
+                        {imagePreview ? (
+                          <div className="space-y-4">
+                            <img 
+                              src={imagePreview} 
+                              alt="Business preview" 
+                              className="w-32 h-32 object-cover rounded-xl mx-auto border-2 border-green-200"
+                            />
+                            <p className="text-green-600 font-semibold">Click to change image</p>
                           </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <FaCloudUploadAlt className="w-12 h-12 text-green-400 mx-auto" />
+                            <div>
+                              <p className="text-gray-700 font-semibold">Upload Business Logo</p>
+                              <p className="text-gray-500 text-sm">PNG, JPG up to 5MB</p>
+                            </div>
+                          </div>
+                        )}
+                      </motion.div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                        <div className="relative">
+                          <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
+                          <input
+                            type={passwordVisible ? "text" : "password"}
+                            required
+                            value={formData.password}
+                            onChange={(e) => handleInputChange("password", e.target.value)}
+                            className="w-full pl-12 pr-12 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
+                            placeholder="Create secure password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setPasswordVisible(!passwordVisible)}
+                            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-green-500 hover:text-green-600"
+                          >
+                            {passwordVisible ? <FaEyeSlash /> : <FaEye />}
+                          </button>
                         </div>
-                      )}
-                    </motion.div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
-                        <input
-                          type={passwordVisible ? "text" : "password"}
-                          required
-                          value={formData.password}
-                          onChange={(e) => handleInputChange("password", e.target.value)}
-                          className="w-full pl-12 pr-12 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
-                          placeholder="Create secure password"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setPasswordVisible(!passwordVisible)}
-                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-green-500 hover:text-green-600"
-                        >
-                          {passwordVisible ? <FaEyeSlash /> : <FaEye />}
-                        </button>
                       </div>
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Password</label>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
-                        <input
-                          type={confirmPasswordVisible ? "text" : "password"}
-                          required
-                          value={formData.confirmPassword}
-                          onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                          className="w-full pl-12 pr-12 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
-                          placeholder="Confirm your password"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
-                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-green-500 hover:text-green-600"
-                        >
-                          {confirmPasswordVisible ? <FaEyeSlash /> : <FaEye />}
-                        </button>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Password</label>
+                        <div className="relative">
+                          <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
+                          <input
+                            type={confirmPasswordVisible ? "text" : "password"}
+                            required
+                            value={formData.confirmPassword}
+                            onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                            className="w-full pl-12 pr-12 py-3 bg-green-50 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-gray-900 transition-all duration-300"
+                            placeholder="Confirm your password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-green-500 hover:text-green-600"
+                          >
+                            {confirmPasswordVisible ? <FaEyeSlash /> : <FaEye />}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex gap-4 pt-4">
+                  <div className="flex gap-4 pt-4">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleBack}
+                      className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 px-6 rounded-xl border-2 border-gray-200 transition-all duration-300 hover:border-gray-300"
+                    >
+                      Back
+                    </motion.button>
+                    
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleSignup}
+                      disabled={isLoading || !uploadedImageUrl}
+                      className="flex-1 bg-gradient-to-r from-green-500 to-yellow-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-green-500/25 border-2 border-white/20 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <span className="relative flex items-center justify-center gap-2">
+                        {isLoading ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Submitting...
+                          </>
+                        ) : (
+                          <>
+                            <Truck className="w-5 h-5" />
+                            Submit
+                          </>
+                        )}
+                      </span>
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="bg-gradient-to-r from-green-500 to-yellow-500 p-4 text-center">
+            <p className="text-white/80 text-sm">
+              🚀 Join vendors making ₦50K - ₦250K monthly on LagBuy
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Success Modal */}
+        <AnimatePresence>
+          {showSuccessModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-3xl p-8 max-w-md w-full border-4 border-green-200 shadow-2xl"
+              >
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Sparkles className="w-10 h-10 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-black text-gray-900 mb-4">Welcome to LagBuy! 🎉</h3>
+                  <p className="text-gray-600 mb-6 leading-relaxed">
+                    Your vendor account has been created successfully! A verification email has been sent to{" "}
+                    <strong className="text-green-600">{formData.email}</strong>. 
+                    Check your inbox (and spam folder) to verify your account and start selling!
+                  </p>
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleBack}
-                    className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 px-6 rounded-xl border-2 border-gray-200 transition-all duration-300 hover:border-gray-300"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleCloseSuccessModal}
+                    className="w-full bg-gradient-to-r from-green-500 to-yellow-500 text-white font-bold py-4 px-6 rounded-2xl shadow-lg"
                   >
-                    Back
-                  </motion.button>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleSignup}
-                    disabled={isLoading}
-                    className="flex-1 bg-gradient-to-r from-green-500 to-yellow-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-green-500/25 border-2 border-white/20 relative overflow-hidden group"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <span className="relative flex items-center justify-center gap-2">
-                      {isLoading ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <Truck className="w-5 h-5" />
-                          Submit
-                        </>
-                      )}
-                    </span>
+                    Start Selling Now!
                   </motion.button>
                 </div>
               </motion.div>
-            )}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="bg-gradient-to-r from-green-500 to-yellow-500 p-4 text-center">
-          <p className="text-white/80 text-sm">
-            🚀 Join vendors making ₦50K - ₦250K monthly on LagBuy
-          </p>
-        </div>
-      </motion.div>
-
-      {/* Success Modal */}
-      <AnimatePresence>
-        {showSuccessModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-3xl p-8 max-w-md w-full border-4 border-green-200 shadow-2xl"
-            >
-              <div className="text-center">
-                <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Sparkles className="w-10 h-10 text-white" />
-                </div>
-                <h3 className="text-2xl font-black text-gray-900 mb-4">Welcome to LagBuy! 🎉</h3>
-                <p className="text-gray-600 mb-6 leading-relaxed">
-                  Your vendor account has been created successfully! A verification email has been sent to{" "}
-                  <strong className="text-green-600">{formData.email}</strong>. 
-                  Check your inbox (and spam folder) to verify your account and start selling!
-                </p>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleCloseSuccessModal}
-                  className="w-full bg-gradient-to-r from-green-500 to-yellow-500 text-white font-bold py-4 px-6 rounded-2xl shadow-lg"
-                >
-                  Start Selling Now!
-                </motion.button>
-              </div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
 
-      {/* Duplicate Email Modal */}
-      <AnimatePresence>
-        {showDuplicateEmailModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          >
+        {/* Duplicate Email Modal */}
+        <AnimatePresence>
+          {showDuplicateEmailModal && (
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-3xl p-8 max-w-md w-full border-4 border-yellow-200 shadow-2xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             >
-              <div className="text-center">
-                <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Mail className="w-8 h-8 text-white" />
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-3xl p-8 max-w-md w-full border-4 border-yellow-200 shadow-2xl"
+              >
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Mail className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-black text-gray-900 mb-4">Email Already Registered</h3>
+                  <p className="text-gray-600 mb-6">
+                    This email is already associated with an account. Would you like to log in instead?
+                  </p>
+                  <div className="flex gap-4">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleCloseDuplicateEmailModal}
+                      className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl border-2 border-gray-200"
+                    >
+                      Try Another Email
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setShowDuplicateEmailModal(false);
+                        onSwitch("login");
+                      }}
+                      className="flex-1 bg-gradient-to-r from-green-500 to-yellow-500 text-white font-bold py-3 rounded-xl shadow-lg"
+                    >
+                      Log In
+                    </motion.button>
+                  </div>
                 </div>
-                <h3 className="text-xl font-black text-gray-900 mb-4">Email Already Registered</h3>
-                <p className="text-gray-600 mb-6">
-                  This email is already associated with an account. Would you like to log in instead?
-                </p>
-                <div className="flex gap-4">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleCloseDuplicateEmailModal}
-                    className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl border-2 border-gray-200"
-                  >
-                    Try Another Email
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      setShowDuplicateEmailModal(false);
-                      onSwitch("login");
-                    }}
-                    className="flex-1 bg-gradient-to-r from-green-500 to-yellow-500 text-white font-bold py-3 rounded-xl shadow-lg"
-                  >
-                    Log In
-                  </motion.button>
-                </div>
-              </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
